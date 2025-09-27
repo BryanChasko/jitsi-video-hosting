@@ -54,17 +54,63 @@ aws sso login --profile jitsi-dev
 aws sso login --profile aerospaceug-admin
 ```
 
-### Terraform
-Infrastructure-as-Code deployment:
+### Terraform Infrastructure-as-Code
 
+**Primary Tool**: Terraform for complete AWS infrastructure management
+
+#### Project Architecture
+- **Single Configuration**: All infrastructure defined in `main.tf`
+- **Multi-Account**: Infrastructure (668383289911) + DNS (211125425201)
+- **Scale-to-Zero**: ECS service with `desired_count = 0` for cost control
+- **Security First**: IAM roles, SSL certificates, encrypted storage
+
+#### Key Terraform Resources
+```hcl
+# Core Infrastructure
+resource "aws_vpc" "main"                    # Custom VPC (10.0.0.0/16)
+resource "aws_subnet" "public"                # Multi-AZ public subnets
+resource "aws_security_group" "jitsi"         # Ports 443/TCP, 10000/UDP
+resource "aws_lb" "jitsi"                     # Network Load Balancer
+resource "aws_lb_listener" "jitsi_https_tls"  # TLS listener with certificate
+
+# Container Platform
+resource "aws_ecs_cluster" "jitsi"            # Fargate cluster
+resource "aws_ecs_service" "jitsi"            # Scale-to-zero service
+resource "aws_ecs_task_definition" "jitsi"    # Jitsi container config
+
+# Storage & Security
+resource "aws_s3_bucket" "jitsi_recordings"   # Video storage
+resource "aws_iam_role" "ecs_task"            # Least privilege access
+resource "aws_cloudwatch_log_group" "jitsi"   # Container logs
+```
+
+#### Terraform Workflow
 ```bash
-# Standard workflow
+# Plan with output file (recommended)
 terraform plan -out=tfplan
 terraform apply tfplan
 
-# Cross-account resource management
-terraform import aws_route53_record.example Z123456789/example.com/A
+# Multi-profile management
+terraform plan -out=tfplan                    # Infrastructure account
+aws route53 change-resource-record-sets ...   # DNS account
+
+# State management
+terraform state list
+terraform state show aws_lb.jitsi
 ```
+
+#### Cross-Account Challenges Solved
+1. **SSL Certificate**: Manual DNS validation across accounts
+2. **DNS Management**: Separate AWS profiles for different accounts
+3. **Resource Dependencies**: Careful ordering of cross-account resources
+4. **State Isolation**: Infrastructure state separate from DNS state
+
+#### AI-Assisted Terraform Development
+- **Code Generation**: Amazon Q generated initial resource configurations
+- **Best Practices**: AI recommended security groups, IAM policies, encryption
+- **Error Resolution**: Real-time debugging of Terraform syntax and logic
+- **Resource Optimization**: AI suggested cost-effective resource sizing
+- **Documentation**: Automated generation of resource descriptions and tags
 
 ## Development Workflow
 
@@ -99,6 +145,8 @@ terraform import aws_route53_record.example Z123456789/example.com/A
 - **Security**: Built-in AWS security best practices
 - **Architecture**: AI-recommended patterns and structures
 - **Consistency**: Standardized code formatting and structure
+- **Terraform Best Practices**: Proper resource naming, tagging, and dependencies
+- **Infrastructure Validation**: AI-assisted plan review and error detection
 
 ### Operational Excellence
 - **Automation**: Fully automated deployment pipeline
@@ -116,15 +164,19 @@ terraform import aws_route53_record.example Z123456789/example.com/A
 ### Technical Insights
 1. **Cross-Account Complexity**: AI helped navigate AWS multi-account challenges
 2. **Security First**: AI consistently recommended security best practices
-3. **Documentation**: AI-generated docs require human review but save significant time
-4. **Error Patterns**: AI quickly identifies and resolves common infrastructure issues
+3. **Terraform Expertise**: AI provided advanced Terraform patterns and resource configurations
+4. **State Management**: AI guided proper Terraform state handling and resource imports
+5. **Documentation**: AI-generated docs require human review but save significant time
+6. **Error Patterns**: AI quickly identifies and resolves common infrastructure issues
 
 ## Future Enhancements
 
 ### Planned AI Integrations
-- **Automated Testing**: AI-generated test suites for infrastructure
-- **Performance Optimization**: AI-driven resource optimization
-- **Security Scanning**: Continuous AI-powered security analysis
+- **Terraform Testing**: AI-generated Terratest suites for infrastructure validation
+- **Performance Optimization**: AI-driven resource optimization and right-sizing
+- **Security Scanning**: Continuous AI-powered security analysis with Checkov integration
 - **Cost Management**: AI-assisted cost optimization recommendations
+- **State Management**: AI-powered Terraform state analysis and cleanup
+- **Module Development**: AI-generated reusable Terraform modules
 
 This project serves as a reference implementation for AI-assisted infrastructure development using Amazon Q Developer and modern DevOps practices.
