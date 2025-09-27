@@ -185,18 +185,6 @@ resource "aws_lb_target_group" "jitsi_jvb" {
   }
 }
 
-# NLB Listener for HTTPS
-resource "aws_lb_listener" "jitsi_https" {
-  load_balancer_arn = aws_lb.jitsi.arn
-  port              = "443"
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.jitsi_https.arn
-  }
-}
-
 # NLB Listener for JVB UDP
 resource "aws_lb_listener" "jitsi_jvb" {
   load_balancer_arn = aws_lb.jitsi.arn
@@ -208,6 +196,21 @@ resource "aws_lb_listener" "jitsi_jvb" {
     target_group_arn = aws_lb_target_group.jitsi_jvb.arn
   }
 }
+
+# HTTPS Listener for NLB (TLS with certificate)
+resource "aws_lb_listener" "jitsi_https_tls" {
+  load_balancer_arn = aws_lb.jitsi.arn
+  port              = "443"
+  protocol          = "TLS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = "arn:aws:acm:us-west-2:668383289911:certificate/ca18accd-3d2a-4ca5-9510-c2dec36fa355"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.jitsi_https.arn
+  }
+}
+
 
 # ECS Cluster
 resource "aws_ecs_cluster" "jitsi" {
