@@ -169,6 +169,112 @@ terraform state show aws_lb.jitsi
 5. **Documentation**: AI-generated docs require human review but save significant time
 6. **Error Patterns**: AI quickly identifies and resolves common infrastructure issues
 
+## Operational Scripts
+
+### Perl-Based Platform Management
+
+**Language**: Perl for all operational scripts following [perlstyle](https://perldoc.perl.org/perlstyle) guidelines  
+**Setup**: Homebrew-managed Perl with cpanminus for module management  
+**Quality**: Perl::Critic linting for code quality assurance
+
+#### Installation & Setup
+```bash
+# Install Perl and dependencies via Homebrew
+brew install perl cpanminus
+cpanm JSON Term::ANSIColor Perl::Critic
+
+# Initialize scripts
+cd scripts/
+./setup.pl
+```
+
+#### Core Operational Scripts
+
+**`setup.pl`** - Script initialization and permissions management
+- Makes all Perl scripts executable
+- Verifies script availability and permissions
+- Provides usage guidance for operational workflow
+
+**`scale-up.pl`** - ECS service scaling with comprehensive health verification
+- Scales ECS service from 0 to 1 with timeout management
+- Verifies service stability and task health status
+- Includes load balancer target health monitoring
+- Provides detailed status reporting throughout scaling process
+
+**`scale-down.pl`** - Graceful service shutdown with verification
+- Scales ECS service from current count to 0
+- Monitors task termination with timeout handling
+- Verifies complete shutdown and resource cleanup
+- Ensures cost-optimized state with zero running resources
+
+**`status.pl`** - Comprehensive platform status monitoring
+- ECS service and task status with resource utilization
+- Load balancer health and target group monitoring
+- Network connectivity and SSL certificate validation
+- Cost estimation and resource allocation reporting
+- Colored output with clear status indicators
+
+**`check-health.pl`** - Multi-layer health verification system
+- ECS service and task health validation
+- Load balancer target health verification
+- DNS resolution and HTTPS connectivity testing
+- SSL certificate validation and expiry checking
+- Application response verification (Jitsi Meet detection)
+- Pass/fail summary with detailed error reporting
+
+**`test-platform.pl`** - Complete testing workflow orchestration
+- 10-phase comprehensive testing pipeline
+- Prerequisites validation (AWS CLI, required tools)
+- End-to-end platform testing with automatic cleanup
+- SSL certificate and HTTPS access validation
+- Jitsi Meet functionality verification
+- Detailed logging with timestamped test results
+
+#### Perl Development Standards
+```bash
+# Code quality checking
+perlcritic scripts/*.pl
+
+# Syntax validation
+perl -c scripts/script-name.pl
+
+# Style guidelines
+# - Use strict and warnings pragmas
+# - Proper error handling with return statements
+# - Security-focused (qx() instead of backticks)
+# - Colored output with Term::ANSIColor
+# - JSON parsing for AWS CLI responses
+```
+
+#### Operational Workflow
+```bash
+# Complete testing workflow
+./test-platform.pl
+
+# Manual operations
+./scale-up.pl      # Start platform
+./check-health.pl  # Verify health
+./status.pl        # Check status
+./scale-down.pl    # Stop platform
+
+# Quick status check
+./status.pl
+```
+
+#### AWS Integration
+- **Profile**: `jitsi-dev` for all AWS operations
+- **Region**: `us-west-2` for infrastructure resources
+- **Services**: ECS Fargate, Network Load Balancer, Route53
+- **Security**: IAM roles with least privilege access
+- **Monitoring**: CloudWatch logs and metrics integration
+
+#### Error Handling & Logging
+- Comprehensive error handling with proper exit codes
+- Colored console output for operational clarity
+- Timestamped logging for audit trails
+- Automatic cleanup on failure scenarios
+- Detailed status reporting for troubleshooting
+
 ## Future Enhancements
 
 ### Lambda Function Standards
