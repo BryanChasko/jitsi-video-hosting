@@ -171,6 +171,17 @@ terraform state show aws_lb.jitsi
 
 ## Future Enhancements
 
+### Perl Development Standards
+**Style Guide**: Follow [perlstyle](https://perldoc.perl.org/perlstyle) official guidelines  
+**Linting**: Use Perl::Critic for code quality  
+**Setup**: 
+```bash
+# Install linter
+cpanm Perl::Critic
+# Run linter
+perlcritic scripts/*.pl
+```
+
 ### Lambda Function Standards
 **Architecture**: AWS Graviton (arm64) for cost efficiency  
 **Language Preference**: Rust > Python > Go > Others  

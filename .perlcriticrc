@@ -1,0 +1,29 @@
+# Perl::Critic configuration for jitsi-video-hosting project
+# Based on perlstyle guidelines: https://perldoc.perl.org/perlstyle
+
+severity = 3
+theme = core + bugs + maintenance + complexity + security
+
+# Enforce strict and warnings
+[TestingAndDebugging::RequireUseStrict]
+[TestingAndDebugging::RequireUseWarnings]
+
+# Code layout and style
+[CodeLayout::RequireTidyCode]
+[CodeLayout::ProhibitTrailingWhitespace]
+[CodeLayout::RequireConsistentNewlines]
+
+# Subroutines and naming
+[Subroutines::RequireFinalReturn]
+[NamingConventions::Capitalization]
+
+# Variables and references
+[Variables::RequireLexicalLoopIterators]
+[Variables::ProhibitPackageVars]
+
+# Input/Output
+[InputOutput::RequireCheckedSyscalls]
+[InputOutput::RequireCheckedOpen]
+
+# Security
+[ValuesAndExpressions::ProhibitInterpolationOfLiterals]
