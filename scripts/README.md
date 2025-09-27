@@ -4,36 +4,64 @@ This directory contains operational scripts for managing the Jitsi platform.
 
 ## Available Scripts:
 
-- `project-status.pl` - Display current project status including ECS service counts and load balancer DNS
-- `scale-up.pl` - Scale ECS service from 0 to 1
-- `scale-down.pl` - Scale ECS service from 1 to 0
+### Shell Scripts (Primary)
+- `test-platform.sh` - **Complete platform testing workflow** - Main orchestration script
+- `scale-up.sh` - Scale ECS service from 0 to 1 with health verification
+- `scale-down.sh` - Scale ECS service from current count to 0 with verification
+- `check-health.sh` - Comprehensive platform health verification
+- `status.sh` - Display detailed current platform status
+
+### Perl Scripts (Legacy)
+- `scale-up.pl` - Basic scale-up script (legacy)
+- `scale-down.pl` - Basic scale-down script (legacy)
 
 ## Usage:
 
-### Project Status
+### Quick Testing
 ```bash
-# Make script executable (if not already)
-chmod +x project-status.pl
+# Run complete testing workflow
+./test-platform.sh
 
-# Run status check
-./project-status.pl
+# Check current status
+./status.sh
 ```
 
-Example output:
-```
-Project: Jitsi Video Platform
-ECS Service: jitsi-video-platform-service (0/0 running)
-Load Balancer: jitsi-video-platform-nlb-6005dd61c01ffd11.elb.us-west-2.amazonaws.com
-Status: Scaled to zero
-```
+### Manual Operations
+```bash
+# Scale up platform
+./scale-up.sh
 
-## Scripts to be implemented by Amazon Q Developer:
+# Verify health
+./check-health.sh
 
-- `test-platform.sh` - Complete platform testing workflow
-- `check-health.sh` - Verify platform health and status
+# Scale down platform
+./scale-down.sh
+```
 
 ## Requirements:
-- Use AWS CLI with `jitsi-dev` profile
-- Proper error handling and logging
-- Clear status output for operators
-- Support for scale-to-zero architecture
+- AWS CLI configured with `jitsi-dev` profile
+- Required tools: `curl`, `jq`, `openssl`, `bc`, `nslookup`
+- Proper IAM permissions for ECS and ELB operations
+- Internet connectivity for HTTPS testing
+
+## Features:
+- ✅ Comprehensive error handling and logging
+- ✅ Clear status output for operators
+- ✅ Support for scale-to-zero architecture
+- ✅ SSL certificate validation
+- ✅ Load balancer health monitoring
+- ✅ Application functionality testing
+- ✅ Cost optimization reporting
+
+## Testing Workflow:
+1. Prerequisites check
+2. Initial status verification
+3. Scale up service (0→1)
+4. Health verification
+5. SSL certificate validation
+6. HTTPS access testing
+7. Jitsi functionality testing
+8. Scale down service (1→0)
+9. Cleanup verification
+
+All scripts include detailed logging and proper exit codes for automation integration.

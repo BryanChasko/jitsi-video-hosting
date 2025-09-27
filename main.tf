@@ -143,7 +143,7 @@ resource "aws_lb" "jitsi" {
 # Target Group for HTTPS
 resource "aws_lb_target_group" "jitsi_https" {
   name     = "${var.project_name}-https-tg"
-  port     = 443
+  port     = 80
   protocol = "TCP"
   vpc_id   = aws_vpc.main.id
   target_type = "ip"
@@ -151,8 +151,12 @@ resource "aws_lb_target_group" "jitsi_https" {
   health_check {
     enabled             = true
     healthy_threshold   = 2
-    protocol            = "TCP"
+    protocol            = "HTTP"
+    path                = "/"
+    port                = "80"
     unhealthy_threshold = 2
+    timeout             = 5
+    interval            = 30
   }
 
   tags = {
@@ -361,24 +365,23 @@ resource "aws_ecs_task_definition" "jitsi" {
   family                   = "${var.project_name}-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "1024"
-  memory                   = "2048"
+  cpu                      = "2048"
+  memory                   = "4096"
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
   task_role_arn           = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([
     {
-      name  = "jitsi-meet"
+      name  = "jitsi-web"
       image = "jitsi/web:stable"
+      essential = true
       portMappings = [
         {
           containerPort = 80
-          hostPort      = 80
           protocol      = "tcp"
         },
         {
           containerPort = 443
-          hostPort      = 443
           protocol      = "tcp"
         }
       ]
@@ -390,6 +393,136 @@ resource "aws_ecs_task_definition" "jitsi" {
         {
           name  = "DISABLE_HTTPS"
           value = "1"
+        },
+        {
+          name  = "JICOFO_COMPONENT_SECRET"
+          value = "jicofo-secret"
+        },
+        {
+          name  = "JICOFO_AUTH_USER"
+          value = "focus"
+        },
+        {
+          name  = "JICOFO_AUTH_PASSWORD"
+          value = "jicofo-password"
+        },
+        {
+          name  = "JVB_COMPONENT_SECRET"
+          value = "jvb-secret"
+        },
+        {
+          name  = "JVB_AUTH_USER"
+          value = "jvb"
+        },
+        {
+          name  = "JVB_AUTH_PASSWORD"
+          value = "jvb-password"
+        },
+        {
+          name  = "XMPP_DOMAIN"
+          value = "meet.jitsi"
+        },
+        {
+          name  = "XMPP_AUTH_DOMAIN"
+          value = "auth.meet.jitsi"
+        },
+        {
+          name  = "XMPP_BOSH_URL_BASE"
+          value = "http://prosody:5280"
+        },
+        {
+          name  = "XMPP_MUC_DOMAIN"
+          value = "muc.meet.jitsi"
+        },
+        {
+          name  = "TZ"
+          value = "UTC"
+        },
+        {
+          name  = "PUBLIC_URL"
+          value = "https://${var.domain_name}"
+        }
+      ]
+      healthCheck = {
+        command = ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+        interval = 30
+        timeout = 5
+        retries = 3
+        startPeriod = 60
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.jitsi.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "jitsi-web"
+        }
+      }
+    },
+    {
+      name  = "prosody"
+      image = "jitsi/prosody:stable"
+      essential = true
+      environment = [
+        {
+          name  = "AUTH_TYPE"
+          value = "internal"
+        },
+        {
+          name  = "ENABLE_GUESTS"
+          value = "1"
+        },
+        {
+          name  = "XMPP_DOMAIN"
+          value = "meet.jitsi"
+        },
+        {
+          name  = "XMPP_AUTH_DOMAIN"
+          value = "auth.meet.jitsi"
+        },
+        {
+          name  = "XMPP_MUC_DOMAIN"
+          value = "muc.meet.jitsi"
+        },
+        {
+          name  = "XMPP_INTERNAL_MUC_DOMAIN"
+          value = "internal-muc.meet.jitsi"
+        },
+        {
+          name  = "JICOFO_COMPONENT_SECRET"
+          value = "jicofo-secret"
+        },
+        {
+          name  = "JICOFO_AUTH_USER"
+          value = "focus"
+        },
+        {
+          name  = "JICOFO_AUTH_PASSWORD"
+          value = "jicofo-password"
+        },
+        {
+          name  = "JVB_AUTH_USER"
+          value = "jvb"
+        },
+        {
+          name  = "JVB_AUTH_PASSWORD"
+          value = "jvb-password"
+        },
+        {
+          name  = "JVB_COMPONENT_SECRET"
+          value = "jvb-secret"
+        },
+        {
+          name  = "JIGASI_XMPP_USER"
+          value = "jigasi"
+        },
+        {
+          name  = "JIGASI_XMPP_PASSWORD"
+          value = "jigasi-password"
+        },
+        {
+          name  = "TZ"
+          value = "UTC"
         }
       ]
       logConfiguration = {
@@ -397,7 +530,115 @@ resource "aws_ecs_task_definition" "jitsi" {
         options = {
           "awslogs-group"         = aws_cloudwatch_log_group.jitsi.name
           "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "ecs"
+          "awslogs-stream-prefix" = "prosody"
+        }
+      }
+    },
+    {
+      name  = "jicofo"
+      image = "jitsi/jicofo:stable"
+      essential = true
+      environment = [
+        {
+          name  = "XMPP_DOMAIN"
+          value = "meet.jitsi"
+        },
+        {
+          name  = "XMPP_AUTH_DOMAIN"
+          value = "auth.meet.jitsi"
+        },
+        {
+          name  = "XMPP_INTERNAL_MUC_DOMAIN"
+          value = "internal-muc.meet.jitsi"
+        },
+        {
+          name  = "XMPP_MUC_DOMAIN"
+          value = "muc.meet.jitsi"
+        },
+        {
+          name  = "XMPP_SERVER"
+          value = "prosody"
+        },
+        {
+          name  = "JICOFO_COMPONENT_SECRET"
+          value = "jicofo-secret"
+        },
+        {
+          name  = "JICOFO_AUTH_USER"
+          value = "focus"
+        },
+        {
+          name  = "JICOFO_AUTH_PASSWORD"
+          value = "jicofo-password"
+        },
+        {
+          name  = "TZ"
+          value = "UTC"
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.jitsi.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "jicofo"
+        }
+      }
+    },
+    {
+      name  = "jvb"
+      image = "jitsi/jvb:stable"
+      essential = true
+      portMappings = [
+        {
+          containerPort = 10000
+          protocol      = "udp"
+        }
+      ]
+      environment = [
+        {
+          name  = "XMPP_AUTH_DOMAIN"
+          value = "auth.meet.jitsi"
+        },
+        {
+          name  = "XMPP_INTERNAL_MUC_DOMAIN"
+          value = "internal-muc.meet.jitsi"
+        },
+        {
+          name  = "XMPP_SERVER"
+          value = "prosody"
+        },
+        {
+          name  = "JVB_AUTH_USER"
+          value = "jvb"
+        },
+        {
+          name  = "JVB_AUTH_PASSWORD"
+          value = "jvb-password"
+        },
+        {
+          name  = "JVB_COMPONENT_SECRET"
+          value = "jvb-secret"
+        },
+        {
+          name  = "JVB_PORT"
+          value = "10000"
+        },
+        {
+          name  = "JVB_ADVERTISE_IPS"
+          value = "AUTO"
+        },
+        {
+          name  = "TZ"
+          value = "UTC"
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.jitsi.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "jvb"
         }
       }
     }
@@ -438,8 +679,14 @@ resource "aws_ecs_service" "jitsi" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.jitsi_https.arn
-    container_name   = "jitsi-meet"
-    container_port   = 443
+    container_name   = "jitsi-web"
+    container_port   = 80
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.jitsi_jvb.arn
+    container_name   = "jvb"
+    container_port   = 10000
   }
 
   tags = {
