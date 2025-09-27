@@ -6,6 +6,8 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 📋 **[AWS_SETUP.md](AWS_SETUP.md)** - Complete AWS IAM Identity Center setup guide for deploying your own Jitsi platform
 
+🌐 **[DOMAIN_SETUP.md](DOMAIN_SETUP.md)** - DNS and SSL certificate configuration guide
+
 🔧 **[OPERATIONS.md](OPERATIONS.md)** - Project-specific operational details (AWS account, region, etc.) - *Not included in public repo*
 
 Generally speaking, this aims to be a guide others can use to host video calls and enable streaming for their own communities, hosted on AWS.

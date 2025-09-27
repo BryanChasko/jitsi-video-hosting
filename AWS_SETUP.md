@@ -25,6 +25,8 @@
 - `AmazonS3FullAccess` - Video storage
 - `SecretsManagerReadWrite` - Application secrets
 - `AWSCertificateManagerFullAccess` - TLS certificates
+- `IAMFullAccess` - IAM role creation
+- `CloudWatchLogsFullAccess` - Log group management
 
 ### 3. Create Users and Groups
 1. **Create User:**
@@ -100,10 +102,30 @@ brew install terraform
    ```
 
 ### Deployed Resources
-The base infrastructure includes:
+The infrastructure includes:
+
+**Network Foundation:**
 - **VPC:** `vpc-0acc250e205ebcdf7` with CIDR `10.0.0.0/16`
 - **Public Subnets:** 
   - `subnet-081cf3bdaa824df9b` in `us-west-2a` (`10.0.1.0/24`)
   - `subnet-0664d061583a06615` in `us-west-2b` (`10.0.2.0/24`)
 - **Internet Gateway:** `igw-0784c626ea98fac10`
-- **Route Table:** `rtb-0d42fc00455e5b26c` with internet routing
+
+**Load Balancing & Security:**
+- **Network Load Balancer:** `jitsi-video-platform-nlb-6005dd61c01ffd11.elb.us-west-2.amazonaws.com`
+- **Security Group:** `sg-0c9e4f020335150f5` (ports 443 TCP, 10000 UDP)
+- **Target Groups:**
+  - HTTPS: `jitsi-video-platform-https-tg`
+  - JVB UDP: `jitsi-video-platform-jvb-tg`
+
+**Container Platform (Scale-to-Zero):**
+- **ECS Cluster:** `jitsi-video-platform-cluster`
+- **ECS Service:** `jitsi-video-platform-service` (desired_count = 0)
+- **Task Definition:** `jitsi-video-platform-task:1`
+- **S3 Bucket:** `jitsi-video-platform-recordings-4c2967df`
+
+**Deployment Commands:**
+```bash
+terraform plan -out=tfplan
+terraform apply tfplan
+```

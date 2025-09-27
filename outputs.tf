@@ -27,3 +27,48 @@ output "availability_zones" {
   description = "Availability zones used"
   value       = aws_subnet.public[*].availability_zone
 }
+
+output "security_group_id" {
+  description = "ID of the Jitsi security group"
+  value       = aws_security_group.jitsi.id
+}
+
+output "load_balancer_arn" {
+  description = "ARN of the Network Load Balancer"
+  value       = aws_lb.jitsi.arn
+}
+
+output "load_balancer_dns_name" {
+  description = "DNS name of the Network Load Balancer"
+  value       = aws_lb.jitsi.dns_name
+}
+
+output "target_group_https_arn" {
+  description = "ARN of the HTTPS target group"
+  value       = aws_lb_target_group.jitsi_https.arn
+}
+
+output "target_group_jvb_arn" {
+  description = "ARN of the JVB UDP target group"
+  value       = aws_lb_target_group.jitsi_jvb.arn
+}
+
+output "ecs_cluster_name" {
+  description = "Name of the ECS cluster"
+  value       = aws_ecs_cluster.jitsi.name
+}
+
+output "ecs_service_name" {
+  description = "Name of the ECS service"
+  value       = aws_ecs_service.jitsi.name
+}
+
+output "s3_bucket_name" {
+  description = "Name of the S3 bucket for recordings"
+  value       = aws_s3_bucket.jitsi_recordings.bucket
+}
+
+output "task_definition_arn" {
+  description = "ARN of the ECS task definition"
+  value       = aws_ecs_task_definition.jitsi.arn
+}
