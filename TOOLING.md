@@ -19,15 +19,21 @@ This project was built using **Amazon Q Developer** as the primary AI assistant,
 **GitHub Integration**: Connected Amazon Q to GitHub repository for automated development workflows
 
 #### Slash Commands Used:
-- `/q dev` - Automatically implement features and bug fixes via pull requests
-- `/q review` - Automated code reviews with security and quality feedback
+- `/q dev` - Automatically implement features and bug fixes via pull requests (use in **issues**)
+- `/q review` - Automated code reviews with security and quality feedback (use in **PRs**)
 - `/q help` - Access Amazon Q Developer documentation and features
 
-#### Workflow:
-1. **Issue Creation**: Used GitHub CLI to create structured issues
-2. **AI Implementation**: Added `/q dev` to issues for automatic implementation
-3. **Code Review**: Amazon Q provides automated PR reviews
-4. **Iteration**: Continuous improvement through AI feedback
+#### Required Labels:
+- **"Amazon Q development agent"** - Triggers feature development from issues
+- **"Amazon Q transform agent"** - Triggers Java code transformation
+
+#### Correct Workflow:
+1. **Create GitHub Issue** with requirements and `/q dev` command
+2. **Add "Amazon Q development agent" label** to trigger implementation
+3. **Amazon Q creates new PR** with complete implementation
+4. **Amazon Q automatically reviews** the PR for code quality
+5. **Use `/q review`** for additional reviews or `/q` for questions
+6. **Merge PR** after review and testing
 
 ## Command Line Tools
 
@@ -157,9 +163,12 @@ terraform state show aws_lb.jitsi
 
 ### AI Collaboration Best Practices
 1. **Clear Requirements**: Detailed project goals enable better AI assistance
-2. **Iterative Feedback**: Continuous interaction improves AI understanding
-3. **Context Sharing**: Providing full project context enhances AI recommendations
-4. **Tool Integration**: Combining multiple AI tools (IDE + GitHub) amplifies benefits
+2. **Proper Labels**: Use "Amazon Q development agent" label for `/q dev` to work
+3. **Issue-Based Development**: Start with GitHub issues, not PRs, for implementation
+4. **PR-Based Review**: Use pull requests for code review and iteration
+5. **Iterative Feedback**: Continuous interaction improves AI understanding
+6. **Context Sharing**: Providing full project context enhances AI recommendations
+7. **Tool Integration**: Combining multiple AI tools (IDE + GitHub) amplifies benefits
 
 ### Technical Insights
 1. **Cross-Account Complexity**: AI helped navigate AWS multi-account challenges
@@ -187,5 +196,22 @@ terraform state show aws_lb.jitsi
 - **State Management**: AI-powered Terraform state analysis and cleanup
 - **Module Development**: AI-generated reusable Terraform modules
 - **Lambda Functions**: AI-generated Rust/Python functions on Graviton processors
+
+## Troubleshooting Amazon Q GitHub Integration
+
+### `/q dev` Not Working?
+1. **Check Labels**: Ensure "Amazon Q development agent" label exists and is applied to issue
+2. **Use in Issues**: `/q dev` works in GitHub **issues**, not pull requests
+3. **Wait for Processing**: Amazon Q may take a few minutes to create the PR
+4. **Check Permissions**: Ensure Amazon Q app has repository access
+
+### `/q review` Not Working?
+1. **Use in PRs**: `/q review` works in **pull requests**, not issues
+2. **Automatic Reviews**: Amazon Q automatically reviews new/reopened PRs
+3. **Manual Trigger**: Use `/q review` for additional reviews in existing PRs
+
+### Key Differences:
+- **Issues + Label**: Triggers implementation (`/q dev` + "Amazon Q development agent" label)
+- **Pull Requests**: Triggers review (`/q review` or automatic)
 
 This project serves as a reference implementation for AI-assisted infrastructure development using Amazon Q Developer and modern DevOps practices.
