@@ -171,6 +171,14 @@ terraform state show aws_lb.jitsi
 
 ## Future Enhancements
 
+### Lambda Function Standards
+**Architecture**: AWS Graviton (arm64) for cost efficiency  
+**Language Preference**: Rust > Python > Go > Others  
+**Runtimes**: 
+- `provided.al2023` (Rust custom runtime)
+- `python3.12` on arm64
+- `go1.x` on arm64
+
 ### Planned AI Integrations
 - **Terraform Testing**: AI-generated Terratest suites for infrastructure validation
 - **Performance Optimization**: AI-driven resource optimization and right-sizing
@@ -178,5 +186,6 @@ terraform state show aws_lb.jitsi
 - **Cost Management**: AI-assisted cost optimization recommendations
 - **State Management**: AI-powered Terraform state analysis and cleanup
 - **Module Development**: AI-generated reusable Terraform modules
+- **Lambda Functions**: AI-generated Rust/Python functions on Graviton processors
 
 This project serves as a reference implementation for AI-assisted infrastructure development using Amazon Q Developer and modern DevOps practices.
