@@ -97,3 +97,68 @@ output "cloudwatch_log_group" {
   description = "CloudWatch log group name for ECS logs"
   value       = aws_cloudwatch_log_group.jitsi.name
 }
+
+# Production Optimization Outputs
+output "secrets_manager_arn" {
+  description = "ARN of the Secrets Manager secret for Jitsi authentication"
+  value       = aws_secretsmanager_secret.jitsi_secrets.arn
+  sensitive   = true
+}
+
+output "sns_alerts_topic_arn" {
+  description = "ARN of the SNS topic for alerts"
+  value       = aws_sns_topic.alerts.arn
+}
+
+output "autoscaling_target_resource_id" {
+  description = "Resource ID of the auto-scaling target"
+  value       = aws_appautoscaling_target.jitsi_target.resource_id
+}
+
+output "task_cpu" {
+  description = "CPU units allocated to the ECS task"
+  value       = var.task_cpu
+}
+
+output "task_memory" {
+  description = "Memory (MB) allocated to the ECS task"
+  value       = var.task_memory
+}
+
+output "recording_enabled" {
+  description = "Whether video recording is enabled"
+  value       = var.enable_recording
+}
+
+output "max_participants" {
+  description = "Maximum number of participants per meeting"
+  value       = var.max_participants
+}
+
+# Monitoring and Alerting
+output "cloudwatch_alarms" {
+  description = "CloudWatch alarm names for monitoring"
+  value = {
+    high_cpu    = aws_cloudwatch_metric_alarm.high_cpu.alarm_name
+    high_memory = aws_cloudwatch_metric_alarm.high_memory.alarm_name
+  }
+}
+
+output "jitsi_metrics_namespace" {
+  description = "CloudWatch namespace for Jitsi-specific metrics"
+  value       = "Jitsi/JVB"
+}
+
+# Operational Information
+output "deployment_summary" {
+  description = "Summary of the production-optimized Jitsi deployment"
+  value = {
+    platform_url        = "https://${var.domain_name}"
+    recording_enabled   = var.enable_recording
+    auto_scaling        = "Enabled (0-3 instances)"
+    monitoring          = "CloudWatch + SNS alerts"
+    secret_management   = "AWS Secrets Manager"
+    resource_allocation = "${var.task_cpu} CPU / ${var.task_memory}MB RAM"
+    s3_bucket          = aws_s3_bucket.jitsi_recordings.bucket
+  }
+}

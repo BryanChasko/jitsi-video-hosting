@@ -33,3 +33,27 @@ variable "domain_name" {
   type        = string
   default     = "meet.awsaerospace.org"
 }
+
+variable "task_cpu" {
+  description = "CPU units for ECS task (1024 = 1 vCPU)"
+  type        = number
+  default     = 4096
+}
+
+variable "task_memory" {
+  description = "Memory for ECS task in MB"
+  type        = number
+  default     = 8192
+}
+
+variable "enable_recording" {
+  description = "Enable video recording with Jibri"
+  type        = bool
+  default     = true
+}
+
+variable "max_participants" {
+  description = "Maximum number of participants per meeting"
+  type        = number
+  default     = 50
+}

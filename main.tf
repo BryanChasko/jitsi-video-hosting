@@ -109,6 +109,22 @@ resource "aws_security_group" "jitsi" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # JVB TCP fallback port
+  ingress {
+    from_port   = 4443
+    to_port     = 4443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTP for health checks
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   # All outbound traffic
   egress {
     from_port   = 0
@@ -286,7 +302,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# IAM Policy for ECS Task (S3 access for video storage)
+# IAM Policy for ECS Task (S3 access for video storage and Secrets Manager)
 resource "aws_iam_role_policy" "ecs_task_s3" {
   name = "${var.project_name}-ecs-task-s3-policy"
   role = aws_iam_role.ecs_task.id
@@ -309,6 +325,13 @@ resource "aws_iam_role_policy" "ecs_task_s3" {
           "s3:ListBucket"
         ]
         Resource = aws_s3_bucket.jitsi_recordings.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = aws_secretsmanager_secret.jitsi_secrets.arn
       }
     ]
   })
@@ -328,6 +351,55 @@ resource "aws_s3_bucket" "jitsi_recordings" {
 # Random ID for S3 bucket suffix
 resource "random_id" "bucket_suffix" {
   byte_length = 4
+}
+
+# Random passwords for Jitsi components
+resource "random_password" "jicofo_component_secret" {
+  length  = 32
+  special = true
+}
+
+resource "random_password" "jicofo_auth_password" {
+  length  = 32
+  special = true
+}
+
+resource "random_password" "jvb_component_secret" {
+  length  = 32
+  special = true
+}
+
+resource "random_password" "jvb_auth_password" {
+  length  = 32
+  special = true
+}
+
+resource "random_password" "jigasi_auth_password" {
+  length  = 32
+  special = true
+}
+
+# AWS Secrets Manager secrets for Jitsi authentication
+resource "aws_secretsmanager_secret" "jitsi_secrets" {
+  name        = "${var.project_name}-jitsi-secrets"
+  description = "Authentication secrets for Jitsi Meet components"
+  
+  tags = {
+    Name        = "${var.project_name}-jitsi-secrets"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "jitsi_secrets" {
+  secret_id = aws_secretsmanager_secret.jitsi_secrets.id
+  secret_string = jsonencode({
+    jicofo_component_secret = random_password.jicofo_component_secret.result
+    jicofo_auth_password   = random_password.jicofo_auth_password.result
+    jvb_component_secret   = random_password.jvb_component_secret.result
+    jvb_auth_password      = random_password.jvb_auth_password.result
+    jigasi_auth_password   = random_password.jigasi_auth_password.result
+  })
 }
 
 # S3 Bucket versioning
@@ -365,8 +437,8 @@ resource "aws_ecs_task_definition" "jitsi" {
   family                   = "${var.project_name}-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "2048"
-  memory                   = "4096"
+  cpu                      = var.task_cpu
+  memory                   = var.task_memory
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
   task_role_arn           = aws_iam_role.ecs_task.arn
 
@@ -395,30 +467,6 @@ resource "aws_ecs_task_definition" "jitsi" {
           value = "1"
         },
         {
-          name  = "JICOFO_COMPONENT_SECRET"
-          value = "jicofo-secret"
-        },
-        {
-          name  = "JICOFO_AUTH_USER"
-          value = "focus"
-        },
-        {
-          name  = "JICOFO_AUTH_PASSWORD"
-          value = "jicofo-password"
-        },
-        {
-          name  = "JVB_COMPONENT_SECRET"
-          value = "jvb-secret"
-        },
-        {
-          name  = "JVB_AUTH_USER"
-          value = "jvb"
-        },
-        {
-          name  = "JVB_AUTH_PASSWORD"
-          value = "jvb-password"
-        },
-        {
           name  = "XMPP_DOMAIN"
           value = "meet.jitsi"
         },
@@ -435,12 +483,62 @@ resource "aws_ecs_task_definition" "jitsi" {
           value = "muc.meet.jitsi"
         },
         {
+          name  = "XMPP_INTERNAL_MUC_DOMAIN"
+          value = "internal-muc.meet.jitsi"
+        },
+        {
+          name  = "XMPP_RECORDER_DOMAIN"
+          value = "recorder.meet.jitsi"
+        },
+        {
           name  = "TZ"
           value = "UTC"
         },
         {
           name  = "PUBLIC_URL"
           value = "https://${var.domain_name}"
+        },
+        {
+          name  = "ENABLE_RECORDING"
+          value = var.enable_recording ? "1" : "0"
+        },
+        {
+          name  = "DROPBOX_UPLOAD_TOKEN"
+          value = ""
+        },
+        {
+          name  = "ENABLE_TRANSCRIPTIONS"
+          value = "0"
+        },
+        {
+          name  = "RESOLUTION"
+          value = "1280x720"
+        },
+        {
+          name  = "RESOLUTION_WIDTH"
+          value = "1280"
+        },
+        {
+          name  = "RESOLUTION_HEIGHT"
+          value = "720"
+        }
+      ]
+      secrets = [
+        {
+          name      = "JICOFO_COMPONENT_SECRET"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_component_secret::"
+        },
+        {
+          name      = "JICOFO_AUTH_PASSWORD"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_auth_password::"
+        },
+        {
+          name      = "JVB_COMPONENT_SECRET"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_component_secret::"
+        },
+        {
+          name      = "JVB_AUTH_PASSWORD"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_auth_password::"
         }
       ]
       healthCheck = {
@@ -489,40 +587,58 @@ resource "aws_ecs_task_definition" "jitsi" {
           value = "internal-muc.meet.jitsi"
         },
         {
-          name  = "JICOFO_COMPONENT_SECRET"
-          value = "jicofo-secret"
+          name  = "XMPP_RECORDER_DOMAIN"
+          value = "recorder.meet.jitsi"
         },
         {
           name  = "JICOFO_AUTH_USER"
           value = "focus"
         },
         {
-          name  = "JICOFO_AUTH_PASSWORD"
-          value = "jicofo-password"
-        },
-        {
           name  = "JVB_AUTH_USER"
           value = "jvb"
-        },
-        {
-          name  = "JVB_AUTH_PASSWORD"
-          value = "jvb-password"
-        },
-        {
-          name  = "JVB_COMPONENT_SECRET"
-          value = "jvb-secret"
         },
         {
           name  = "JIGASI_XMPP_USER"
           value = "jigasi"
         },
         {
-          name  = "JIGASI_XMPP_PASSWORD"
-          value = "jigasi-password"
+          name  = "JIBRI_RECORDER_USER"
+          value = "recorder"
+        },
+        {
+          name  = "JIBRI_XMPP_USER"
+          value = "jibri"
         },
         {
           name  = "TZ"
           value = "UTC"
+        },
+        {
+          name  = "LOG_LEVEL"
+          value = "info"
+        }
+      ]
+      secrets = [
+        {
+          name      = "JICOFO_COMPONENT_SECRET"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_component_secret::"
+        },
+        {
+          name      = "JICOFO_AUTH_PASSWORD"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_auth_password::"
+        },
+        {
+          name      = "JVB_AUTH_PASSWORD"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_auth_password::"
+        },
+        {
+          name      = "JVB_COMPONENT_SECRET"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_component_secret::"
+        },
+        {
+          name      = "JIGASI_XMPP_PASSWORD"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jigasi_auth_password::"
         }
       ]
       logConfiguration = {
@@ -560,20 +676,34 @@ resource "aws_ecs_task_definition" "jitsi" {
           value = "prosody"
         },
         {
-          name  = "JICOFO_COMPONENT_SECRET"
-          value = "jicofo-secret"
-        },
-        {
           name  = "JICOFO_AUTH_USER"
           value = "focus"
         },
         {
-          name  = "JICOFO_AUTH_PASSWORD"
-          value = "jicofo-password"
-        },
-        {
           name  = "TZ"
           value = "UTC"
+        },
+        {
+          name  = "JICOFO_ENABLE_BRIDGE_HEALTH_CHECKS"
+          value = "true"
+        },
+        {
+          name  = "JICOFO_CONF_INITIAL_PARTICIPANT_WAIT_TIMEOUT"
+          value = "15000"
+        },
+        {
+          name  = "JICOFO_CONF_SINGLE_PARTICIPANT_TIMEOUT"
+          value = "20000"
+        }
+      ]
+      secrets = [
+        {
+          name      = "JICOFO_COMPONENT_SECRET"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_component_secret::"
+        },
+        {
+          name      = "JICOFO_AUTH_PASSWORD"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_auth_password::"
         }
       ]
       logConfiguration = {
@@ -613,14 +743,6 @@ resource "aws_ecs_task_definition" "jitsi" {
           value = "jvb"
         },
         {
-          name  = "JVB_AUTH_PASSWORD"
-          value = "jvb-password"
-        },
-        {
-          name  = "JVB_COMPONENT_SECRET"
-          value = "jvb-secret"
-        },
-        {
           name  = "JVB_PORT"
           value = "10000"
         },
@@ -629,8 +751,58 @@ resource "aws_ecs_task_definition" "jitsi" {
           value = "AUTO"
         },
         {
+          name  = "JVB_ADVERTISE_PRIVATE_CANDIDATES"
+          value = "false"
+        },
+        {
+          name  = "JVB_ENABLE_APIS"
+          value = "rest,colibri"
+        },
+        {
+          name  = "JVB_STUN_SERVERS"
+          value = "stun.l.google.com:19302,stun1.l.google.com:19302"
+        },
+        {
           name  = "TZ"
           value = "UTC"
+        },
+        {
+          name  = "JVB_TCP_HARVESTER_DISABLED"
+          value = "true"
+        },
+        {
+          name  = "JVB_TCP_PORT"
+          value = "4443"
+        },
+        {
+          name  = "JVB_TCP_MAPPED_PORT"
+          value = "4443"
+        },
+        {
+          name  = "JVB_WS_DOMAIN"
+          value = var.domain_name
+        },
+        {
+          name  = "JVB_WS_SERVER_ID"
+          value = "jvb1"
+        },
+        {
+          name  = "COLIBRI_REST_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "SHUTDOWN_REST_ENABLED"
+          value = "true"
+        }
+      ]
+      secrets = [
+        {
+          name      = "JVB_AUTH_PASSWORD"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_auth_password::"
+        },
+        {
+          name      = "JVB_COMPONENT_SECRET"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_component_secret::"
         }
       ]
       logConfiguration = {
@@ -639,6 +811,100 @@ resource "aws_ecs_task_definition" "jitsi" {
           "awslogs-group"         = aws_cloudwatch_log_group.jitsi.name
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "jvb"
+        }
+      }
+    },
+    {
+      name  = "jibri"
+      image = "jitsi/jibri:stable"
+      essential = var.enable_recording
+      privileged = true
+      environment = [
+        {
+          name  = "XMPP_AUTH_DOMAIN"
+          value = "auth.meet.jitsi"
+        },
+        {
+          name  = "XMPP_DOMAIN"
+          value = "meet.jitsi"
+        },
+        {
+          name  = "XMPP_INTERNAL_MUC_DOMAIN"
+          value = "internal-muc.meet.jitsi"
+        },
+        {
+          name  = "XMPP_MUC_DOMAIN"
+          value = "muc.meet.jitsi"
+        },
+        {
+          name  = "XMPP_RECORDER_DOMAIN"
+          value = "recorder.meet.jitsi"
+        },
+        {
+          name  = "XMPP_SERVER"
+          value = "prosody"
+        },
+        {
+          name  = "JIBRI_RECORDER_USER"
+          value = "recorder"
+        },
+        {
+          name  = "JIBRI_XMPP_USER"
+          value = "jibri"
+        },
+        {
+          name  = "JIBRI_BREWERY_MUC"
+          value = "jibribrewery"
+        },
+        {
+          name  = "JIBRI_RECORDING_DIR"
+          value = "/tmp/recordings"
+        },
+        {
+          name  = "JIBRI_FINALIZE_RECORDING_SCRIPT_PATH"
+          value = "/opt/jitsi/jibri/finalize.sh"
+        },
+        {
+          name  = "JIBRI_STRIP_DOMAIN_JID"
+          value = "muc"
+        },
+        {
+          name  = "JIBRI_LOGS_DIR"
+          value = "/config/logs"
+        },
+        {
+          name  = "TZ"
+          value = "UTC"
+        },
+        {
+          name  = "ENABLE_STATS_D"
+          value = "false"
+        },
+        {
+          name  = "AWS_DEFAULT_REGION"
+          value = var.aws_region
+        },
+        {
+          name  = "S3_BUCKET_NAME"
+          value = aws_s3_bucket.jitsi_recordings.bucket
+        }
+      ]
+      secrets = [
+        {
+          name      = "JIBRI_RECORDER_PASSWORD"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jigasi_auth_password::"
+        },
+        {
+          name      = "JIBRI_XMPP_PASSWORD"
+          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jigasi_auth_password::"
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.jitsi.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "jibri"
         }
       }
     }
@@ -654,12 +920,148 @@ resource "aws_ecs_task_definition" "jitsi" {
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "jitsi" {
   name              = "/ecs/${var.project_name}"
-  retention_in_days = 7
+  retention_in_days = 30
 
   tags = {
     Name        = "${var.project_name}-logs"
     Project     = var.project_name
     Environment = var.environment
+  }
+}
+
+# CloudWatch Metric Filters for Jitsi-specific metrics
+resource "aws_cloudwatch_log_metric_filter" "jvb_participants" {
+  name           = "${var.project_name}-jvb-participants"
+  log_group_name = aws_cloudwatch_log_group.jitsi.name
+  pattern        = "[timestamp, level, thread, logger, message=\"Participant count:\", count]"
+
+  metric_transformation {
+    name      = "JVBParticipantCount"
+    namespace = "Jitsi/JVB"
+    value     = "$count"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "jvb_conferences" {
+  name           = "${var.project_name}-jvb-conferences"
+  log_group_name = aws_cloudwatch_log_group.jitsi.name
+  pattern        = "[timestamp, level, thread, logger, message=\"Conference count:\", count]"
+
+  metric_transformation {
+    name      = "JVBConferenceCount"
+    namespace = "Jitsi/JVB"
+    value     = "$count"
+  }
+}
+
+# CloudWatch Alarms
+resource "aws_cloudwatch_metric_alarm" "high_cpu" {
+  alarm_name          = "${var.project_name}-high-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "This metric monitors ECS CPU utilization"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    ServiceName = aws_ecs_service.jitsi.name
+    ClusterName = aws_ecs_cluster.jitsi.name
+  }
+
+  tags = {
+    Name        = "${var.project_name}-high-cpu-alarm"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "high_memory" {
+  alarm_name          = "${var.project_name}-high-memory"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "MemoryUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "This metric monitors ECS memory utilization"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    ServiceName = aws_ecs_service.jitsi.name
+    ClusterName = aws_ecs_cluster.jitsi.name
+  }
+
+  tags = {
+    Name        = "${var.project_name}-high-memory-alarm"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+# SNS Topic for alerts
+resource "aws_sns_topic" "alerts" {
+  name = "${var.project_name}-alerts"
+
+  tags = {
+    Name        = "${var.project_name}-alerts"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+# Application Auto Scaling Target
+resource "aws_appautoscaling_target" "jitsi_target" {
+  max_capacity       = 3
+  min_capacity       = 0
+  resource_id        = "service/${aws_ecs_cluster.jitsi.name}/${aws_ecs_service.jitsi.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  tags = {
+    Name        = "${var.project_name}-autoscaling-target"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+# Auto Scaling Policy - Scale Up
+resource "aws_appautoscaling_policy" "jitsi_scale_up" {
+  name               = "${var.project_name}-scale-up"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.jitsi_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.jitsi_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.jitsi_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 70.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
+  }
+}
+
+# Auto Scaling Policy - Memory Tracking
+resource "aws_appautoscaling_policy" "jitsi_scale_memory" {
+  name               = "${var.project_name}-scale-memory"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.jitsi_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.jitsi_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.jitsi_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+    target_value       = 70.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
   }
 }
 

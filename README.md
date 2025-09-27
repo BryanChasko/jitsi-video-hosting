@@ -14,9 +14,13 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 🤖 **[OPERATIONS.md](OPERATIONS.md)** - Project-specific operational details (AWS account, region, etc.) - *Not included in public repo*
 
+🏭 **[PRODUCTION_OPTIMIZATION.md](PRODUCTION_OPTIMIZATION.md)** - Comprehensive production optimization guide with security, monitoring, and performance enhancements
+
 ✅ **Infrastructure Status**: Fully deployed with HTTPS-enabled Network Load Balancer, DNS configured, and scale-to-zero ECS service
 
 🚀 **Testing Status**: Complete automated testing suite with scale-up/down, health verification, and SSL validation
+
+🔧 **Production Status**: Optimized for AWS production use with auto-scaling, monitoring, video recording, and enhanced security
 
 Generally speaking, this aims to be a guide others can use to host video calls and enable streaming for their own communities, hosted on AWS.
 
@@ -28,6 +32,7 @@ Generally speaking, this aims to be a guide others can use to host video calls a
 ├── DOMAIN_SETUP.md     # DNS and SSL certificate configuration
 ├── TOOLING.md          # AI-assisted development workflow and tools
 ├── TESTING.md          # Comprehensive testing guide and automation
+├── PRODUCTION_OPTIMIZATION.md # Production optimization guide and enhancements
 ├── main.tf            # Main Terraform configuration
 ├── variables.tf       # Terraform variables
 ├── outputs.tf         # Terraform outputs
