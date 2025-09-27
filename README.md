@@ -8,11 +8,15 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 🌐 **[DOMAIN_SETUP.md](DOMAIN_SETUP.md)** - DNS and SSL certificate configuration guide
 
-🤖 **[TOOLING.md](TOOLING.md)** - AI-assisted development workflow with Amazon Q and GitHub CLI
+🔧 **[TOOLING.md](TOOLING.md)** - AI-assisted development workflow with Amazon Q and GitHub CLI
 
-🔧 **[OPERATIONS.md](OPERATIONS.md)** - Project-specific operational details (AWS account, region, etc.) - *Not included in public repo*
+🧪 **[TESTING.md](TESTING.md)** - Comprehensive platform testing guide and automation scripts
+
+🤖 **[OPERATIONS.md](OPERATIONS.md)** - Project-specific operational details (AWS account, region, etc.) - *Not included in public repo*
 
 ✅ **Infrastructure Status**: Fully deployed with HTTPS-enabled Network Load Balancer, DNS configured, and scale-to-zero ECS service
+
+🚀 **Testing Status**: Complete automated testing suite with scale-up/down, health verification, and SSL validation
 
 Generally speaking, this aims to be a guide others can use to host video calls and enable streaming for their own communities, hosted on AWS.
 
@@ -23,9 +27,20 @@ Generally speaking, this aims to be a guide others can use to host video calls a
 ├── AWS_SETUP.md        # AWS Identity Center setup guide
 ├── DOMAIN_SETUP.md     # DNS and SSL certificate configuration
 ├── TOOLING.md          # AI-assisted development workflow and tools
+├── TESTING.md          # Comprehensive testing guide and automation
 ├── main.tf            # Main Terraform configuration
 ├── variables.tf       # Terraform variables
 ├── outputs.tf         # Terraform outputs
+├── scripts/           # Operational and testing scripts
+│   ├── README.md      # Scripts documentation
+│   ├── setup.sh       # Script setup and permissions
+│   ├── test-platform.sh  # Complete testing workflow
+│   ├── scale-up.sh    # Scale service up with verification
+│   ├── scale-down.sh  # Scale service down with verification
+│   ├── check-health.sh # Health verification
+│   ├── status.sh      # Platform status reporting
+│   ├── scale-up.pl    # Legacy Perl scale-up script
+│   └── scale-down.pl  # Legacy Perl scale-down script
 └── .gitignore         # Git exclusions
 ```
 
@@ -33,6 +48,28 @@ Generally speaking, this aims to be a guide others can use to host video calls a
 
 The platform is to be accessible at the following publicly registered domain:
 **`https://meet.awsaerospace.org`**
+
+## Quick Testing
+
+To test the deployed platform:
+
+```bash
+# Setup testing scripts
+cd scripts/
+./setup.sh
+
+# Run complete testing workflow
+./test-platform.sh
+```
+
+This will:
+1. ✅ Scale ECS service from 0 to 1
+2. ✅ Verify service health and stability
+3. ✅ Test HTTPS access and SSL certificate
+4. ✅ Verify Jitsi Meet functionality
+5. ✅ Scale back to 0 for cost optimization
+
+See **[TESTING.md](TESTING.md)** for detailed testing documentation.
 
 ## Jitsi Application Requirements (The "What")
 

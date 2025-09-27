@@ -72,3 +72,28 @@ output "task_definition_arn" {
   description = "ARN of the ECS task definition"
   value       = aws_ecs_task_definition.jitsi.arn
 }
+
+output "domain_name" {
+  description = "Domain name for the Jitsi platform"
+  value       = var.domain_name
+}
+
+output "platform_url" {
+  description = "Full HTTPS URL for the Jitsi platform"
+  value       = "https://${var.domain_name}"
+}
+
+output "aws_region" {
+  description = "AWS region where resources are deployed"
+  value       = var.aws_region
+}
+
+output "project_name" {
+  description = "Project name used for resource naming"
+  value       = var.project_name
+}
+
+output "cloudwatch_log_group" {
+  description = "CloudWatch log group name for ECS logs"
+  value       = aws_cloudwatch_log_group.jitsi.name
+}
