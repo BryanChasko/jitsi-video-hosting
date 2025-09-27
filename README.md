@@ -18,9 +18,9 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 ✅ **Infrastructure Status**: Fully deployed with HTTPS-enabled Network Load Balancer, DNS configured, and scale-to-zero ECS service
 
-🚀 **Testing Status**: Complete automated testing suite with scale-up/down, health verification, and SSL validation
+🚀 **Testing Status**: Complete Perl-based testing suite with 10-phase workflow, health verification, and SSL validation
 
-🔧 **Production Status**: Optimized for AWS production use with auto-scaling, monitoring, video recording, and enhanced security
+🔧 **Production Status**: Optimized for AWS production use with manual scaling, monitoring, video recording, and enhanced security
 
 Generally speaking, this aims to be a guide others can use to host video calls and enable streaming for their own communities, hosted on AWS.
 
@@ -32,20 +32,18 @@ Generally speaking, this aims to be a guide others can use to host video calls a
 ├── DOMAIN_SETUP.md     # DNS and SSL certificate configuration
 ├── TOOLING.md          # AI-assisted development workflow and tools
 ├── TESTING.md          # Comprehensive testing guide and automation
-├── PRODUCTION_OPTIMIZATION.md # Production optimization guide and enhancements
+├── PRODUCTION_OPTIMIZATION.md # Production optimization guide
+├── PRODUCTION_SUMMARY.md # Production deployment summary
 ├── main.tf            # Main Terraform configuration
 ├── variables.tf       # Terraform variables
 ├── outputs.tf         # Terraform outputs
-├── scripts/           # Operational and testing scripts
-│   ├── README.md      # Scripts documentation
-│   ├── setup.sh       # Script setup and permissions
-│   ├── test-platform.sh  # Complete testing workflow
-│   ├── scale-up.sh    # Scale service up with verification
-│   ├── scale-down.sh  # Scale service down with verification
-│   ├── check-health.sh # Health verification
-│   ├── status.sh      # Platform status reporting
-│   ├── scale-up.pl    # Legacy Perl scale-up script
-│   └── scale-down.pl  # Legacy Perl scale-down script
+├── scripts/           # Perl operational scripts
+│   ├── setup.pl       # Script initialization and permissions
+│   ├── test-platform.pl  # Complete testing workflow (10-phase)
+│   ├── scale-up.pl    # Scale service up with verification
+│   ├── scale-down.pl  # Scale service down with verification
+│   ├── check-health.pl # Multi-layer health verification
+│   └── status.pl      # Platform status reporting
 └── .gitignore         # Git exclusions
 ```
 
@@ -59,12 +57,12 @@ The platform is to be accessible at the following publicly registered domain:
 To test the deployed platform:
 
 ```bash
-# Setup testing scripts
+# Setup testing scripts (Perl-based)
 cd scripts/
-./setup.sh
+./setup.pl
 
 # Run complete testing workflow
-./test-platform.sh
+./test-platform.pl
 ```
 
 This will:

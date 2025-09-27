@@ -105,15 +105,9 @@ output "secrets_manager_arn" {
   sensitive   = true
 }
 
-output "sns_alerts_topic_arn" {
-  description = "ARN of the SNS topic for alerts"
-  value       = aws_sns_topic.alerts.arn
-}
 
-output "autoscaling_target_resource_id" {
-  description = "Resource ID of the auto-scaling target"
-  value       = aws_appautoscaling_target.jitsi_target.resource_id
-}
+
+
 
 output "task_cpu" {
   description = "CPU units allocated to the ECS task"
@@ -135,14 +129,7 @@ output "max_participants" {
   value       = var.max_participants
 }
 
-# Monitoring and Alerting
-output "cloudwatch_alarms" {
-  description = "CloudWatch alarm names for monitoring"
-  value = {
-    high_cpu    = aws_cloudwatch_metric_alarm.high_cpu.alarm_name
-    high_memory = aws_cloudwatch_metric_alarm.high_memory.alarm_name
-  }
-}
+
 
 output "jitsi_metrics_namespace" {
   description = "CloudWatch namespace for Jitsi-specific metrics"
@@ -155,8 +142,8 @@ output "deployment_summary" {
   value = {
     platform_url        = "https://${var.domain_name}"
     recording_enabled   = var.enable_recording
-    auto_scaling        = "Enabled (0-3 instances)"
-    monitoring          = "CloudWatch + SNS alerts"
+    auto_scaling        = "Manual scaling via scripts"
+    monitoring          = "CloudWatch logs and metrics"
     secret_management   = "AWS Secrets Manager"
     resource_allocation = "${var.task_cpu} CPU / ${var.task_memory}MB RAM"
     s3_bucket          = aws_s3_bucket.jitsi_recordings.bucket

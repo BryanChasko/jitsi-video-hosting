@@ -117,7 +117,18 @@ sub run_test_phase {
     
     log_message('INFO', "Starting test phase: $phase_name");
     
-    my $result = system($phase_command);
+    my $result;
+    if (ref($phase_command) eq 'CODE') {
+        $result = $phase_command->() ? 0 : 1;
+    } elsif ($phase_command =~ /^\w+$/) {
+        # Function name - call it directly
+        no strict 'refs';
+        $result = &{$phase_command}() ? 0 : 1;
+    } else {
+        # System command
+        $result = system($phase_command);
+    }
+    
     if ($result == 0) {
         log_message('SUCCESS', "Test phase '$phase_name' completed successfully");
         return 1;
@@ -231,7 +242,7 @@ sub main {
     log_message('INFO', "Log file: $LOG_FILE");
     
     # Phase 1: Prerequisites
-    unless (run_test_phase("Prerequisites Check", sub { check_prerequisites() })) {
+    unless (run_test_phase("Prerequisites Check", "check_prerequisites")) {
         exit 1;
     }
     
@@ -251,17 +262,17 @@ sub main {
     }
     
     # Phase 5: SSL Certificate Test
-    unless (run_test_phase("SSL Certificate Validation", sub { test_ssl_certificate() })) {
+    unless (run_test_phase("SSL Certificate Validation", "test_ssl_certificate")) {
         exit 1;
     }
     
     # Phase 6: HTTPS Access Test
-    unless (run_test_phase("HTTPS Access Test", sub { test_https_access() })) {
+    unless (run_test_phase("HTTPS Access Test", "test_https_access")) {
         exit 1;
     }
     
     # Phase 7: Jitsi Functionality Test
-    unless (run_test_phase("Jitsi Functionality Test", sub { test_jitsi_functionality() })) {
+    unless (run_test_phase("Jitsi Functionality Test", "test_jitsi_functionality")) {
         exit 1;
     }
     

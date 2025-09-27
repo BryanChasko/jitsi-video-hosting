@@ -302,6 +302,25 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+# IAM Policy for ECS Task Execution (Secrets Manager access)
+resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
+  name = "${var.project_name}-ecs-task-execution-secrets-policy"
+  role = aws_iam_role.ecs_task_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = aws_secretsmanager_secret.jitsi_secrets.arn
+      }
+    ]
+  })
+}
+
 # IAM Policy for ECS Task (S3 access for video storage and Secrets Manager)
 resource "aws_iam_role_policy" "ecs_task_s3" {
   name = "${var.project_name}-ecs-task-s3-policy"
@@ -500,27 +519,7 @@ resource "aws_ecs_task_definition" "jitsi" {
         },
         {
           name  = "ENABLE_RECORDING"
-          value = var.enable_recording ? "1" : "0"
-        },
-        {
-          name  = "DROPBOX_UPLOAD_TOKEN"
-          value = ""
-        },
-        {
-          name  = "ENABLE_TRANSCRIPTIONS"
           value = "0"
-        },
-        {
-          name  = "RESOLUTION"
-          value = "1280x720"
-        },
-        {
-          name  = "RESOLUTION_WIDTH"
-          value = "1280"
-        },
-        {
-          name  = "RESOLUTION_HEIGHT"
-          value = "720"
         }
       ]
       secrets = [
@@ -813,100 +812,6 @@ resource "aws_ecs_task_definition" "jitsi" {
           "awslogs-stream-prefix" = "jvb"
         }
       }
-    },
-    {
-      name  = "jibri"
-      image = "jitsi/jibri:stable"
-      essential = var.enable_recording
-      privileged = true
-      environment = [
-        {
-          name  = "XMPP_AUTH_DOMAIN"
-          value = "auth.meet.jitsi"
-        },
-        {
-          name  = "XMPP_DOMAIN"
-          value = "meet.jitsi"
-        },
-        {
-          name  = "XMPP_INTERNAL_MUC_DOMAIN"
-          value = "internal-muc.meet.jitsi"
-        },
-        {
-          name  = "XMPP_MUC_DOMAIN"
-          value = "muc.meet.jitsi"
-        },
-        {
-          name  = "XMPP_RECORDER_DOMAIN"
-          value = "recorder.meet.jitsi"
-        },
-        {
-          name  = "XMPP_SERVER"
-          value = "prosody"
-        },
-        {
-          name  = "JIBRI_RECORDER_USER"
-          value = "recorder"
-        },
-        {
-          name  = "JIBRI_XMPP_USER"
-          value = "jibri"
-        },
-        {
-          name  = "JIBRI_BREWERY_MUC"
-          value = "jibribrewery"
-        },
-        {
-          name  = "JIBRI_RECORDING_DIR"
-          value = "/tmp/recordings"
-        },
-        {
-          name  = "JIBRI_FINALIZE_RECORDING_SCRIPT_PATH"
-          value = "/opt/jitsi/jibri/finalize.sh"
-        },
-        {
-          name  = "JIBRI_STRIP_DOMAIN_JID"
-          value = "muc"
-        },
-        {
-          name  = "JIBRI_LOGS_DIR"
-          value = "/config/logs"
-        },
-        {
-          name  = "TZ"
-          value = "UTC"
-        },
-        {
-          name  = "ENABLE_STATS_D"
-          value = "false"
-        },
-        {
-          name  = "AWS_DEFAULT_REGION"
-          value = var.aws_region
-        },
-        {
-          name  = "S3_BUCKET_NAME"
-          value = aws_s3_bucket.jitsi_recordings.bucket
-        }
-      ]
-      secrets = [
-        {
-          name      = "JIBRI_RECORDER_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jigasi_auth_password::"
-        },
-        {
-          name      = "JIBRI_XMPP_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jigasi_auth_password::"
-        }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.jitsi.name
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "jibri"
-        }
-      }
     }
   ])
 
@@ -954,116 +859,9 @@ resource "aws_cloudwatch_log_metric_filter" "jvb_conferences" {
   }
 }
 
-# CloudWatch Alarms
-resource "aws_cloudwatch_metric_alarm" "high_cpu" {
-  alarm_name          = "${var.project_name}-high-cpu"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/ECS"
-  period              = "300"
-  statistic           = "Average"
-  threshold           = "80"
-  alarm_description   = "This metric monitors ECS CPU utilization"
-  alarm_actions       = [aws_sns_topic.alerts.arn]
 
-  dimensions = {
-    ServiceName = aws_ecs_service.jitsi.name
-    ClusterName = aws_ecs_cluster.jitsi.name
-  }
 
-  tags = {
-    Name        = "${var.project_name}-high-cpu-alarm"
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
 
-resource "aws_cloudwatch_metric_alarm" "high_memory" {
-  alarm_name          = "${var.project_name}-high-memory"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "MemoryUtilization"
-  namespace           = "AWS/ECS"
-  period              = "300"
-  statistic           = "Average"
-  threshold           = "80"
-  alarm_description   = "This metric monitors ECS memory utilization"
-  alarm_actions       = [aws_sns_topic.alerts.arn]
-
-  dimensions = {
-    ServiceName = aws_ecs_service.jitsi.name
-    ClusterName = aws_ecs_cluster.jitsi.name
-  }
-
-  tags = {
-    Name        = "${var.project_name}-high-memory-alarm"
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-# SNS Topic for alerts
-resource "aws_sns_topic" "alerts" {
-  name = "${var.project_name}-alerts"
-
-  tags = {
-    Name        = "${var.project_name}-alerts"
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-# Application Auto Scaling Target
-resource "aws_appautoscaling_target" "jitsi_target" {
-  max_capacity       = 3
-  min_capacity       = 0
-  resource_id        = "service/${aws_ecs_cluster.jitsi.name}/${aws_ecs_service.jitsi.name}"
-  scalable_dimension = "ecs:service:DesiredCount"
-  service_namespace  = "ecs"
-
-  tags = {
-    Name        = "${var.project_name}-autoscaling-target"
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-# Auto Scaling Policy - Scale Up
-resource "aws_appautoscaling_policy" "jitsi_scale_up" {
-  name               = "${var.project_name}-scale-up"
-  policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.jitsi_target.resource_id
-  scalable_dimension = aws_appautoscaling_target.jitsi_target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.jitsi_target.service_namespace
-
-  target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
-    target_value       = 70.0
-    scale_in_cooldown  = 300
-    scale_out_cooldown = 300
-  }
-}
-
-# Auto Scaling Policy - Memory Tracking
-resource "aws_appautoscaling_policy" "jitsi_scale_memory" {
-  name               = "${var.project_name}-scale-memory"
-  policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.jitsi_target.resource_id
-  scalable_dimension = aws_appautoscaling_target.jitsi_target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.jitsi_target.service_namespace
-
-  target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
-    }
-    target_value       = 70.0
-    scale_in_cooldown  = 300
-    scale_out_cooldown = 300
-  }
-}
 
 # ECS Service with scale-to-zero capability
 resource "aws_ecs_service" "jitsi" {
