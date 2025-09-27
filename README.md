@@ -8,6 +8,8 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 🌐 **[DOMAIN_SETUP.md](DOMAIN_SETUP.md)** - DNS and SSL certificate configuration guide
 
+🤖 **[TOOLING.md](TOOLING.md)** - AI-assisted development workflow with Amazon Q and GitHub CLI
+
 🔧 **[OPERATIONS.md](OPERATIONS.md)** - Project-specific operational details (AWS account, region, etc.) - *Not included in public repo*
 
 ✅ **Infrastructure Status**: Fully deployed with HTTPS-enabled Network Load Balancer, DNS configured, and scale-to-zero ECS service
@@ -19,6 +21,8 @@ Generally speaking, this aims to be a guide others can use to host video calls a
 ```
 ├── README.md           # Project overview and requirements
 ├── AWS_SETUP.md        # AWS Identity Center setup guide
+├── DOMAIN_SETUP.md     # DNS and SSL certificate configuration
+├── TOOLING.md          # AI-assisted development workflow and tools
 ├── main.tf            # Main Terraform configuration
 ├── variables.tf       # Terraform variables
 ├── outputs.tf         # Terraform outputs
