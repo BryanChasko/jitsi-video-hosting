@@ -14,7 +14,7 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 🧪 **[TESTING.md](TESTING.md)** - Comprehensive platform testing guide and automation scripts
 
-🤖 **[OPERATIONS.md](OPERATIONS.md)** - Project-specific operational details (AWS account, region, etc.) - *Not included in public repo*
+🤖 **[OPERATIONS.md](https://github.com/BryanChasko/jitsi-video-hosting-ops)** - Project-specific operational details (AWS account, region, etc.) - *Private repository*
 
 🏭 **[PRODUCTION_OPTIMIZATION.md](PRODUCTION_OPTIMIZATION.md)** - Comprehensive production optimization guide with security, monitoring, and performance enhancements
 
@@ -57,6 +57,40 @@ Generally speaking, this aims to be a guide others can use to host video calls a
 
 The platform is to be accessible at the following publicly registered domain:
 **`https://meet.awsaerospace.org`**
+
+## Cost Analysis 💰
+
+### Monthly Cost Breakdown
+
+**Fixed Costs (Always Running):**
+- Network Load Balancer: $16.20/month
+- S3 Storage: $0.02/month
+- AWS Secrets Manager: $0.40/month
+- **Fixed Total: $16.62/month**
+
+**Variable Costs (When Running):**
+- ECS Fargate (4 vCPU, 8GB): $0.198/hour
+
+### Usage Scenarios
+
+| Usage Pattern | Monthly Hours | Variable Cost | Total Cost |
+|---------------|---------------|---------------|-----------|
+| **Scaled Down** | 0 hours | $0.00 | **$16.62** |
+| **Light Use** | 10 hours | $1.98 | **$18.60** |
+| **Regular Use** | 60 hours (2hrs daily) | $12.01 | **$28.63** |
+| **Heavy Use** | 120 hours (4hrs daily) | $23.76 | **$40.38** |
+| **Always On** | 744 hours | $147.31 | **$163.93** |
+
+### Cost Comparison
+
+| Service | Monthly Cost | Users | Notes |
+|---------|--------------|-------|---------|
+| **This Platform** | $28.63 | Unlimited | 2hrs daily usage |
+| Zoom Pro | $12.49 | 1 host | 40min limit |
+| Google Meet | $6.00 | Per user | Enterprise required |
+| Microsoft Teams | $4.00 | Per user | Business plan |
+
+**Key Advantage**: Scale-to-zero architecture saves 58% vs always-on deployment
 
 ## Quick Testing
 
@@ -121,6 +155,7 @@ The platform has been successfully deployed and is **fully operational**:
 - **Resource Allocation**: 4 vCPU / 8GB RAM
 - **Network**: Network Load Balancer with TLS termination
 - **Storage**: S3 bucket for video recordings (when enabled)
+- **Cost Optimization**: Scale-to-zero when not in use
 
 ## Next Steps & Roadmap
 
