@@ -26,6 +26,8 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 🎥 **Video Calling Status**: **LIVE** - Platform successfully serving video conferences at https://meet.awsaerospace.org
 
+📋 **GitHub Issues**: [View Current Issues](https://github.com/BryanChasko/jitsi-video-hosting/issues) - Track development progress and upcoming features
+
 Generally speaking, this aims to be a guide others can use to host video calls and enable streaming for their own communities, hosted on AWS.
 
 ## Repository Structure
@@ -119,6 +121,26 @@ The platform has been successfully deployed and is **fully operational**:
 - **Resource Allocation**: 4 vCPU / 8GB RAM
 - **Network**: Network Load Balancer with TLS termination
 - **Storage**: S3 bucket for video recordings (when enabled)
+
+## Next Steps & Roadmap
+
+### Phase 2: Authentication & Custom Branding ([Issue #14](https://github.com/BryanChasko/jitsi-video-hosting/issues/14))
+- **Cognito Authentication**: Implement gated community access with manual user creation
+- **Social Login**: GitHub/Google integration for awsaerospace.org community
+- **Custom Branding**: Replace Jitsi branding with AWS Aerospace theme
+- **User Management**: Admin-controlled user creation and role management
+
+### Phase 3: Enhanced Features
+- **Video Recording**: EKS-based Jibri service for privileged container support ([Issue #16](https://github.com/BryanChasko/jitsi-video-hosting/issues/16))
+- **Private Operations**: Separate private repository for sensitive operational files ([Issue #15](https://github.com/BryanChasko/jitsi-video-hosting/issues/15))
+- **Advanced Monitoring**: Enhanced CloudWatch dashboards and alerting ([Issue #12](https://github.com/BryanChasko/jitsi-video-hosting/issues/12))
+- **Security Hardening**: Secret rotation and compliance features ([Issue #13](https://github.com/BryanChasko/jitsi-video-hosting/issues/13))
+
+### Community Integration
+- Integration with existing awsaerospace.org website authentication
+- Custom meeting features for AWS user groups (NE3D, RGC3)
+- Meeting scheduling and community announcements
+- Mobile-responsive design and PWA capabilities
 
 ## Jitsi Application Requirements (The "What")
 
