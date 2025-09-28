@@ -146,6 +146,6 @@ output "deployment_summary" {
     monitoring          = "CloudWatch logs and metrics"
     secret_management   = "AWS Secrets Manager"
     resource_allocation = "${var.task_cpu} CPU / ${var.task_memory}MB RAM"
-    s3_bucket          = aws_s3_bucket.jitsi_recordings.bucket
+    s3_bucket           = aws_s3_bucket.jitsi_recordings.bucket
   }
 }

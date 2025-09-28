@@ -89,9 +89,9 @@ data "aws_availability_zones" "available" {
 
 # Security Group for Jitsi
 resource "aws_security_group" "jitsi" {
-  name = "${var.project_name}-jitsi-sg"
-  description      = "Security group for Jitsi Meet application"
-  vpc_id          = aws_vpc.main.id
+  name        = "${var.project_name}-jitsi-sg"
+  description = "Security group for Jitsi Meet application"
+  vpc_id      = aws_vpc.main.id
 
   # HTTPS traffic
   ingress {
@@ -158,10 +158,10 @@ resource "aws_lb" "jitsi" {
 
 # Target Group for HTTPS
 resource "aws_lb_target_group" "jitsi_https" {
-  name     = "${var.project_name}-https-tg"
-  port     = 80
-  protocol = "TCP"
-  vpc_id   = aws_vpc.main.id
+  name        = "${var.project_name}-https-tg"
+  port        = 80
+  protocol    = "TCP"
+  vpc_id      = aws_vpc.main.id
   target_type = "ip"
 
   health_check {
@@ -184,10 +184,10 @@ resource "aws_lb_target_group" "jitsi_https" {
 
 # Target Group for JVB UDP
 resource "aws_lb_target_group" "jitsi_jvb" {
-  name     = "${var.project_name}-jvb-tg"
-  port     = 10000
-  protocol = "UDP"
-  vpc_id   = aws_vpc.main.id
+  name        = "${var.project_name}-jvb-tg"
+  port        = 10000
+  protocol    = "UDP"
+  vpc_id      = aws_vpc.main.id
   target_type = "ip"
 
   health_check {
@@ -402,7 +402,7 @@ resource "random_password" "jigasi_auth_password" {
 resource "aws_secretsmanager_secret" "jitsi_secrets" {
   name        = "${var.project_name}-jitsi-secrets"
   description = "Authentication secrets for Jitsi Meet components"
-  
+
   tags = {
     Name        = "${var.project_name}-jitsi-secrets"
     Project     = var.project_name
@@ -414,10 +414,10 @@ resource "aws_secretsmanager_secret_version" "jitsi_secrets" {
   secret_id = aws_secretsmanager_secret.jitsi_secrets.id
   secret_string = jsonencode({
     jicofo_component_secret = random_password.jicofo_component_secret.result
-    jicofo_auth_password   = random_password.jicofo_auth_password.result
-    jvb_component_secret   = random_password.jvb_component_secret.result
-    jvb_auth_password      = random_password.jvb_auth_password.result
-    jigasi_auth_password   = random_password.jigasi_auth_password.result
+    jicofo_auth_password    = random_password.jicofo_auth_password.result
+    jvb_component_secret    = random_password.jvb_component_secret.result
+    jvb_auth_password       = random_password.jvb_auth_password.result
+    jigasi_auth_password    = random_password.jigasi_auth_password.result
   })
 }
 
@@ -459,12 +459,12 @@ resource "aws_ecs_task_definition" "jitsi" {
   cpu                      = var.task_cpu
   memory                   = var.task_memory
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn           = aws_iam_role.ecs_task.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([
     {
-      name  = "jitsi-web"
-      image = "jitsi/web:stable"
+      name      = "jitsi-web"
+      image     = "jitsi/web:stable"
       essential = true
       portMappings = [
         {
@@ -495,7 +495,7 @@ resource "aws_ecs_task_definition" "jitsi" {
         },
         {
           name  = "XMPP_BOSH_URL_BASE"
-          value = "http://prosody:5280"
+          value = "http://localhost:5280"
         },
         {
           name  = "XMPP_MUC_DOMAIN"
@@ -520,6 +520,10 @@ resource "aws_ecs_task_definition" "jitsi" {
         {
           name  = "ENABLE_RECORDING"
           value = "0"
+        },
+        {
+          name  = "ENABLE_COLIBRI_WEBSOCKET"
+          value = "1"
         }
       ]
       secrets = [
@@ -541,10 +545,10 @@ resource "aws_ecs_task_definition" "jitsi" {
         }
       ]
       healthCheck = {
-        command = ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
-        interval = 30
-        timeout = 5
-        retries = 3
+        command     = ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
         startPeriod = 60
       }
       logConfiguration = {
@@ -557,8 +561,8 @@ resource "aws_ecs_task_definition" "jitsi" {
       }
     },
     {
-      name  = "prosody"
-      image = "jitsi/prosody:stable"
+      name      = "prosody"
+      image     = "jitsi/prosody:stable"
       essential = true
       environment = [
         {
@@ -650,8 +654,8 @@ resource "aws_ecs_task_definition" "jitsi" {
       }
     },
     {
-      name  = "jicofo"
-      image = "jitsi/jicofo:stable"
+      name      = "jicofo"
+      image     = "jitsi/jicofo:stable"
       essential = true
       environment = [
         {
@@ -672,7 +676,7 @@ resource "aws_ecs_task_definition" "jitsi" {
         },
         {
           name  = "XMPP_SERVER"
-          value = "prosody"
+          value = "localhost"
         },
         {
           name  = "JICOFO_AUTH_USER"
@@ -715,8 +719,8 @@ resource "aws_ecs_task_definition" "jitsi" {
       }
     },
     {
-      name  = "jvb"
-      image = "jitsi/jvb:stable"
+      name      = "jvb"
+      image     = "jitsi/jvb:stable"
       essential = true
       portMappings = [
         {
@@ -735,7 +739,7 @@ resource "aws_ecs_task_definition" "jitsi" {
         },
         {
           name  = "XMPP_SERVER"
-          value = "prosody"
+          value = "localhost"
         },
         {
           name  = "JVB_AUTH_USER"
@@ -791,6 +795,14 @@ resource "aws_ecs_task_definition" "jitsi" {
         },
         {
           name  = "SHUTDOWN_REST_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "JVB_WS_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "JVB_WS_TLS"
           value = "true"
         }
       ]
@@ -868,7 +880,7 @@ resource "aws_ecs_service" "jitsi" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.jitsi.id
   task_definition = aws_ecs_task_definition.jitsi.arn
-  desired_count   = 0  # Scale-to-zero requirement
+  desired_count   = 0 # Scale-to-zero requirement
   launch_type     = "FARGATE"
 
   network_configuration {

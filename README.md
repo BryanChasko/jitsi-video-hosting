@@ -4,6 +4,8 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 ## Getting Started
 
+🚀 **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - **START HERE** - Complete step-by-step deployment guide for new developers
+
 📋 **[AWS_SETUP.md](AWS_SETUP.md)** - Complete AWS IAM Identity Center setup guide for deploying your own Jitsi platform
 
 🌐 **[DOMAIN_SETUP.md](DOMAIN_SETUP.md)** - DNS and SSL certificate configuration guide
@@ -20,7 +22,9 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 🚀 **Testing Status**: Complete Perl-based testing suite with 10-phase workflow, health verification, and SSL validation
 
-🔧 **Production Status**: Optimized for AWS production use with manual scaling, monitoring, video recording, and enhanced security
+🔧 **Production Status**: **FULLY OPERATIONAL** - Video calls working with WebSocket support, manual scaling, monitoring, and enhanced security
+
+🎥 **Video Calling Status**: **LIVE** - Platform successfully serving video conferences at https://meet.awsaerospace.org
 
 Generally speaking, this aims to be a guide others can use to host video calls and enable streaming for their own communities, hosted on AWS.
 
@@ -72,7 +76,49 @@ This will:
 4. ✅ Verify Jitsi Meet functionality
 5. ✅ Scale back to 0 for cost optimization
 
+### Manual Testing
+
+1. **Start Platform**: `./scripts/scale-up.pl`
+2. **Open Browser**: Navigate to https://meet.awsaerospace.org
+3. **Create Room**: Enter any room name (e.g., "test-meeting")
+4. **Join Call**: Click "Join" - you should see video/audio interface
+5. **Stop Platform**: `./scripts/scale-down.pl` (for cost savings)
+
+### Troubleshooting
+
+If you encounter "You have been disconnected":
+1. Ensure WebSocket configuration is enabled (already fixed in current deployment)
+2. Check JVB logs: `aws logs get-log-events --log-group-name /ecs/jitsi-video-platform`
+3. Verify target group health in AWS Console
+4. Restart service: `./scripts/scale-down.pl && ./scripts/scale-up.pl`
+
 See **[TESTING.md](TESTING.md)** for detailed testing documentation.
+
+## Deployment Success ✅
+
+The platform has been successfully deployed and is **fully operational**:
+
+- ✅ **Video calls working** - WebSocket connectivity resolved
+- ✅ **SSL/TLS encryption** - Valid certificate for meet.awsaerospace.org
+- ✅ **Scale-to-zero architecture** - Cost optimization when not in use
+- ✅ **Multi-container setup** - All Jitsi components running correctly
+- ✅ **AWS Secrets Manager** - Secure credential management
+- ✅ **CloudWatch monitoring** - Comprehensive logging and metrics
+
+### Key Issues Resolved
+
+1. **Container Configuration** - Fixed Fargate compatibility issues
+2. **Secrets Management** - Resolved IAM permissions for Secrets Manager
+3. **WebSocket Connectivity** - Enabled JVB WebSocket support for video calls
+4. **XMPP Communication** - Fixed inter-container communication using localhost
+
+### Current Architecture
+
+- **Task Definition**: Revision 4 with WebSocket support
+- **Container Count**: 4 containers (jitsi-web, prosody, jicofo, jvb)
+- **Resource Allocation**: 4 vCPU / 8GB RAM
+- **Network**: Network Load Balancer with TLS termination
+- **Storage**: S3 bucket for video recordings (when enabled)
 
 ## Jitsi Application Requirements (The "What")
 
