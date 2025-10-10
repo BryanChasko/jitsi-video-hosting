@@ -2,98 +2,66 @@
 
 All notable changes to the Jitsi Video Platform project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [Unreleased]
 
-## [2.0.0] - 2025-09-27
+### Added
+- **Smart Power Management System** - Three-tier shutdown options for cost optimization
+  - `power-down.pl` - Removes expensive resources, keeps static resources (97% cost savings)
+  - `fully-destroy.pl` - Complete infrastructure destruction with confirmation
+  - Updated `scale-down.pl` documentation for clarity
+- **Co-Organizer Guide** - Comprehensive management documentation for NE3D/RGC3 teams
+- **GitHub Issues Created**:
+  - [#17](https://github.com/BryanChasko/jitsi-video-hosting/issues/17) - AWS Device Farm mobile testing integration
+  - [#18](https://github.com/BryanChasko/jitsi-video-hosting/issues/18) - Smart power management implementation
+  - [#19](https://github.com/BryanChasko/jitsi-video-hosting/issues/19) - Custom AWS Aerospace branding
 
-### 🎉 Major Release - Fully Operational Video Platform
+### Changed
+- **Roadmap Structure** - Reorganized phases to prioritize power management and branding
+- **Cost Management** - Updated documentation with three-tier power options
+- **Documentation** - Enhanced with detailed power management explanations
 
-#### Added
-- **WebSocket Support**: Enabled JVB WebSocket connectivity for reliable video calls
-- **Complete Deployment Guide**: Comprehensive step-by-step guide for new developers
-- **Production Optimization**: Enhanced security, monitoring, and performance features
-- **Comprehensive Testing Suite**: 10-phase Perl-based testing workflow
-- **Scale-to-Zero Architecture**: Cost optimization with on-demand scaling
-- **AWS Secrets Manager Integration**: Secure credential management
-- **CloudWatch Monitoring**: Comprehensive logging and metrics collection
-- **Multi-Container Architecture**: 4-container Jitsi setup (web, prosody, jicofo, jvb)
+### Technical Details
+- Power management scripts preserve S3 buckets, Secrets Manager, IAM roles, CloudWatch logs
+- Cost reduction from $16.62/month to $0.42/month with power-down mode
+- Restore times: 2-3 min (scale-up), 5-10 min (power-up), 15-20 min (full restore)
 
-#### Fixed
-- **Container Configuration Issues**: Resolved Fargate compatibility problems
-- **Secrets Manager Permissions**: Fixed IAM permissions for container startup
-- **WebSocket Connectivity**: Resolved "you have been disconnected" errors
-- **XMPP Communication**: Fixed inter-container communication using localhost
-- **SSL/TLS Configuration**: Proper certificate integration with Network Load Balancer
+## [1.0.0] - 2024-10-10
 
-#### Changed
-- **Task Definition**: Updated to revision 4 with WebSocket support
-- **Container Environment**: Switched from hostname-based to localhost communication
-- **Resource Allocation**: Upgraded to 4 vCPU / 8GB RAM for better performance
-- **Documentation**: Comprehensive updates with deployment guides and troubleshooting
+### Added
+- **Complete Jitsi Meet Platform** - Fully operational video conferencing at https://meet.awsaerospace.org
+- **Scale-to-Zero Architecture** - ECS Fargate with manual scaling scripts
+- **AWS Infrastructure**:
+  - Network Load Balancer with TLS termination
+  - ECS cluster with 4-container Jitsi setup
+  - AWS Secrets Manager for secure credential storage
+  - S3 bucket for video recordings
+  - CloudWatch logging and monitoring
+- **Operational Scripts**:
+  - `scale-up.pl` - Start platform with health verification
+  - `scale-down.pl` - Stop platform for cost savings
+  - `status.pl` - Platform status reporting
+  - `check-health.pl` - Multi-layer health verification
+  - `test-platform.pl` - Complete testing workflow
 
-#### Technical Details
-- **Infrastructure**: AWS ECS Fargate, Network Load Balancer, VPC, S3, Secrets Manager
-- **Security**: TLS encryption, IAM roles with least privilege, encrypted storage
-- **Monitoring**: CloudWatch logs, metrics, and custom Jitsi-specific monitoring
-- **Operational Scripts**: Perl-based automation for scaling and health checks
+### Technical Specifications
+- **Domain**: meet.awsaerospace.org with valid SSL certificate
+- **Capacity**: Unlimited users per meeting, unlimited concurrent meetings
+- **Resources**: 4 vCPU, 8GB RAM on AWS Fargate
+- **Containers**: jitsi-web, prosody, jicofo, jvb with WebSocket support
+- **Region**: US West (Oregon) - us-west-2
 
-### Platform Status: ✅ FULLY OPERATIONAL
+### Security
+- AWS Identity Center (SSO) authentication for administrators
+- Secrets stored in AWS Secrets Manager
+- TLS encryption for all communications
+- Private VPC with security groups
 
-The platform is now successfully serving video conferences with:
-- ✅ Working video calls with WebSocket support
-- ✅ SSL/TLS encryption with valid certificates
-- ✅ Scale-to-zero cost optimization
-- ✅ Comprehensive monitoring and logging
-- ✅ Production-ready security configuration
-
-## [1.0.0] - 2025-09-26
-
-### Initial Release
-
-#### Added
-- Basic Terraform infrastructure for Jitsi Meet on AWS
-- ECS Fargate deployment configuration
-- Network Load Balancer with SSL termination
-- S3 bucket for video recordings
-- Basic security groups and IAM roles
-- Initial container configuration
-
-#### Known Issues
-- Container startup failures due to secrets permissions
-- WebSocket connectivity problems causing disconnections
-- Inter-container communication issues
+### Cost Optimization
+- Scale-to-zero when not in use: $0.00/hour
+- Running cost: $0.20/hour
+- Fixed infrastructure: $16.62/month
+- 58% savings vs always-on deployment
 
 ---
 
-## Development Process
-
-This project demonstrates AI-assisted infrastructure development using:
-- **Amazon Q Developer**: Code generation and debugging assistance
-- **GitHub Integration**: Automated issue tracking and pull requests
-- **Terraform Best Practices**: Infrastructure as Code with proper state management
-- **AWS Security**: Identity Center, Secrets Manager, least privilege access
-- **Operational Excellence**: Comprehensive testing and monitoring
-
-## Contributors
-
-- **Bryan Chasko** - Project Lead and Infrastructure Development
-- **Amazon Q Developer** - AI-assisted development and code generation
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For deployment issues or questions:
-1. Check the [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for step-by-step instructions
-2. Review [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues
-3. Examine CloudWatch logs for detailed error information
-4. Open an issue in the GitHub repository
-
----
-
-**Current Status**: 🚀 Production Ready  
-**Platform URL**: https://meet.awsaerospace.org  
-**Last Updated**: September 27, 2025
+*Format based on [Keep a Changelog](https://keepachangelog.com/)*

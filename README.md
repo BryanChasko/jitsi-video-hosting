@@ -22,9 +22,11 @@ Vision and architectural goals for a video conferencing platform to serve the Ne
 
 🚀 **Testing Status**: Complete Perl-based testing suite with 10-phase workflow, health verification, and SSL validation
 
-🔧 **Production Status**: **FULLY OPERATIONAL** - Video calls working with WebSocket support, manual scaling, monitoring, and enhanced security
+🔧 **Production Status**: **FULLY OPERATIONAL** - Video calls working with WebSocket support, smart power management, monitoring, and enhanced security
 
 🎥 **Video Calling Status**: **LIVE** - Platform successfully serving video conferences at https://meet.awsaerospace.org
+
+🔋 **Power Management**: **SMART TIERED SYSTEM** - Scale-down, power-down (97% savings), and full-destroy options for optimal cost control
 
 📋 **GitHub Issues**: [View Current Issues](https://github.com/BryanChasko/jitsi-video-hosting/issues) - Track development progress and upcoming features
 
@@ -34,12 +36,15 @@ Generally speaking, this aims to be a guide others can use to host video calls a
 
 ```
 ├── README.md           # Project overview and requirements
+├── CHANGELOG.md        # Project change history and releases
+├── CO_ORGANIZER_GUIDE.md # Management guide for NE3D/RGC3 teams
 ├── AWS_SETUP.md        # AWS Identity Center setup guide
 ├── DOMAIN_SETUP.md     # DNS and SSL certificate configuration
 ├── TOOLING.md          # AI-assisted development workflow and tools
 ├── TESTING.md          # Comprehensive testing guide and automation
 ├── PRODUCTION_OPTIMIZATION.md # Production optimization guide
 ├── PRODUCTION_SUMMARY.md # Production deployment summary
+├── ROADMAP.md          # Development roadmap and feature planning
 ├── main.tf            # Main Terraform configuration
 ├── variables.tf       # Terraform variables
 ├── outputs.tf         # Terraform outputs
@@ -48,6 +53,8 @@ Generally speaking, this aims to be a guide others can use to host video calls a
 │   ├── test-platform.pl  # Complete testing workflow (10-phase)
 │   ├── scale-up.pl    # Scale service up with verification
 │   ├── scale-down.pl  # Scale service down with verification
+│   ├── power-down.pl  # Smart shutdown (97% cost savings)
+│   ├── fully-destroy.pl # Complete infrastructure destruction
 │   ├── check-health.pl # Multi-layer health verification
 │   └── status.pl      # Platform status reporting
 └── .gitignore         # Git exclusions

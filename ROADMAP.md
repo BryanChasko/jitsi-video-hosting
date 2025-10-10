@@ -8,22 +8,28 @@
 
 ---
 
-## Phase 2: Authentication & Community Features 🚧
+## Phase 2: Power Management & Branding 🚧
 
 **Timeline**: Q1 2024  
-**GitHub Issue**: [#14](https://github.com/BryanChasko/jitsi-video-hosting/issues/14)
+**GitHub Issues**: [#18](https://github.com/BryanChasko/jitsi-video-hosting/issues/18), [#19](https://github.com/BryanChasko/jitsi-video-hosting/issues/19)
 
-### Authentication System
-- **AWS Cognito Integration**: User pools with social login support
-- **Gated Community Access**: Manual user creation by administrators
-- **Social Login**: GitHub, Google integration for seamless access
-- **Session Management**: Secure authentication flow with Jitsi Meet
+### Smart Power Management ✅
+- **Tiered Shutdown**: Scale-down, power-down, full-destroy options
+- **Cost Optimization**: 97% cost reduction with power-down mode
+- **Resource Preservation**: Keep S3, secrets, IAM during power-down
+- **Co-organizer Tools**: Simple scripts for different shutdown scenarios
 
 ### Custom Branding & UI
-- **AWS Aerospace Branding**: Replace default Jitsi branding
-- **Custom Landing Page**: Branded interface with authentication
+- **AWS Aerospace Branding**: Replace default Jitsi branding ([#19](https://github.com/BryanChasko/jitsi-video-hosting/issues/19))
+- **Custom Landing Page**: Branded interface with community messaging
 - **Mobile Experience**: Responsive design and PWA features
-- **User Dashboard**: Profile management and meeting history
+- **Community Identity**: NE3D and RGC3 specific customization
+
+### Mobile Testing & Quality Assurance
+- **AWS Device Farm Integration**: Cross-device compatibility testing ([#17](https://github.com/BryanChasko/jitsi-video-hosting/issues/17))
+- **Performance Validation**: Load times and video quality across devices
+- **Browser Compatibility**: Safari, Chrome, Firefox mobile testing
+- **User Experience**: Touch interface and mobile-specific features
 
 ### Community Integration
 - **awsaerospace.org Integration**: Leverage existing website authentication
@@ -33,10 +39,16 @@
 
 ---
 
-## Phase 3: Enhanced Features & Recording 🔄
+## Phase 3: Authentication & Enhanced Features 🔄
 
 **Timeline**: Q2 2024  
-**GitHub Issues**: [#15](https://github.com/BryanChasko/jitsi-video-hosting/issues/15), [#16](https://github.com/BryanChasko/jitsi-video-hosting/issues/16)
+**GitHub Issues**: [#14](https://github.com/BryanChasko/jitsi-video-hosting/issues/14), [#15](https://github.com/BryanChasko/jitsi-video-hosting/issues/15), [#16](https://github.com/BryanChasko/jitsi-video-hosting/issues/16)
+
+### Authentication System
+- **AWS Cognito Integration**: User pools with social login support
+- **Gated Community Access**: Manual user creation by administrators
+- **Social Login**: GitHub, Google integration for seamless access
+- **Session Management**: Secure authentication flow with Jitsi Meet
 
 ### Video Recording Capabilities
 - **EKS Integration**: Hybrid architecture for Jibri recording service
