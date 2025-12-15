@@ -4,13 +4,16 @@ use warnings;
 use JSON;
 use Term::ANSIColor qw(colored);
 use POSIX qw(strftime);
+use lib '../lib';
+use JitsiConfig;
 
-# Configuration
-my $PROJECT_NAME = "jitsi-video-platform";
-my $CLUSTER_NAME = "${PROJECT_NAME}-cluster";
-my $SERVICE_NAME = "${PROJECT_NAME}-service";
-my $AWS_PROFILE = "jitsi-dev";
-my $AWS_REGION = "us-west-2";
+# Load configuration from JitsiConfig
+my $config = JitsiConfig->new();
+my $PROJECT_NAME = $config->project_name();
+my $CLUSTER_NAME = $config->cluster_name();
+my $SERVICE_NAME = $config->service_name();
+my $AWS_PROFILE = $config->aws_profile();
+my $AWS_REGION = $config->aws_region();
 my $DESIRED_COUNT = 1;
 my $TIMEOUT_MINUTES = 10;
 

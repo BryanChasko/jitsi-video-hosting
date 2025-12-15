@@ -1,71 +1,221 @@
-# On-Demand Video Platform: Requirements & Architectural Goals
+# Jitsi Video Hosting Platform - On-Demand, Scale-to-Zero on AWS
 
-Vision and architectural goals for a video conferencing platform to serve the New England 3D (NE3D) Blender and Rio Grande Corridor Cloud Community (RGC3) AWS user groups. The solution is built leveraging 100% free Jitsi Meet open-source experience while prioritizing cost control through on-demand operation to spin down resources when calls are not in progress. Recorded video to be stored in s3 for future editing.
+**Self-hosted video conferencing with enterprise-grade cost control.** Deploy Jitsi Meet on AWS with automatic scaling to zero when idle, reducing monthly costs to just **$16.62** fixed + usage-based variable costs.
 
-## Getting Started
+This is a **production-ready**, **domain-agnostic** platform that you can deploy to your own domain with your own AWS account. Perfect for communities, organizations, and teams who want full control over their video infrastructure.
 
-🚀 **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - **START HERE** - Complete step-by-step deployment guide for new developers
+## Quick Start
 
-📋 **[AWS_SETUP.md](AWS_SETUP.md)** - Complete AWS IAM Identity Center setup guide for deploying your own Jitsi platform
+🚀 **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete step-by-step deployment for your domain
 
-🌐 **[DOMAIN_SETUP.md](DOMAIN_SETUP.md)** - DNS and SSL certificate configuration guide
+🔐 **[CONFIG_GUIDE.md](CONFIG_GUIDE.md)** - Domain-agnostic configuration system (your domain, not hardcoded)
 
-🔧 **[TOOLING.md](TOOLING.md)** - AI-assisted development workflow with Amazon Q and GitHub CLI
+📚 **[AWS_SETUP.md](AWS_SETUP.md)** - AWS account setup and IAM configuration
 
-🧪 **[TESTING.md](TESTING.md)** - Comprehensive platform testing guide and automation scripts
+🌐 **[DOMAIN_SETUP.md](DOMAIN_SETUP.md)** - DNS and SSL certificate configuration
 
-🤖 **[OPERATIONS.md](https://github.com/BryanChasko/jitsi-video-hosting-ops)** - Project-specific operational details (AWS account, region, etc.) - *Private repository*
+🔧 **[TOOLING.md](TOOLING.md)** - AI-assisted development workflow with Kiro CLI
 
-🏭 **[PRODUCTION_OPTIMIZATION.md](PRODUCTION_OPTIMIZATION.md)** - Comprehensive production optimization guide with security, monitoring, and performance enhancements
+🧪 **[TESTING.md](TESTING.md)** - Comprehensive testing and validation guide
 
-✅ **Infrastructure Status**: Fully deployed with HTTPS-enabled Network Load Balancer, DNS configured, and scale-to-zero ECS service
+🏭 **[PRODUCTION_OPTIMIZATION.md](PRODUCTION_OPTIMIZATION.md)** - Security, monitoring, and performance
 
-🚀 **Testing Status**: Complete Perl-based testing suite with 10-phase workflow, health verification, and SSL validation
+🤖 **[OPERATIONS.md](https://github.com/BryanChasko/jitsi-video-hosting-ops)** - Operational procedures (private repo)
 
-🔧 **Production Status**: **FULLY OPERATIONAL** - Video calls working with WebSocket support, smart power management, monitoring, and enhanced security
+## Project Status
 
-🎥 **Video Calling Status**: **LIVE** - Platform successfully serving video conferences at https://meet.awsaerospace.org
+| Component | Status | Notes |
+|-----------|--------|-------|
+| **Infrastructure** | ✅ Deployed | VPC, NLB, ECS Fargate, S3, Secrets Manager |
+| **Video Calling** | ✅ Operational | All 4 Jitsi containers running, WebSocket enabled |
+| **Scale-to-Zero** | ✅ Automated | Intelligent power management with 97% cost savings |
+| **Configuration** | ✅ Domain-Agnostic | No hardcoded domains in public repo |
+| **Documentation** | ✅ Comprehensive | Deployment, testing, operations, optimization |
+| **SSL/TLS** | ✅ Configured | Valid certificates, auto-provisioned per domain |
 
-🔋 **Power Management**: **SMART TIERED SYSTEM** - Scale-down, power-down (97% savings), and full-destroy options for optimal cost control
+## Architecture Overview
 
-📋 **GitHub Issues**: [View Current Issues](https://github.com/BryanChasko/jitsi-video-hosting/issues) - Track development progress and upcoming features
+```mermaid
+graph TB
+    subgraph "Your Domain"
+        A["🌐 Your Domain<br/>meet.yourdomain.com"]
+    end
+    
+    subgraph "AWS - Us-West-2"
+        NLB["🔗 Network Load Balancer<br/>Port 443 TLS<br/>Port 10000 UDP"]
+        
+        subgraph "ECS Fargate Cluster"
+            WEB["🌐 Jitsi Web<br/>Port 80"]
+            PROSODY["🔊 Prosody<br/>XMPP Server"]
+            JICOFO["📞 Jicofo<br/>Conference Focus"]
+            JVB["📹 JVB<br/>Video Bridge"]
+        end
+        
+        subgraph "Storage & Secrets"
+            S3["🗂️ S3 Bucket<br/>Video Recordings"]
+            SECRETS["🔐 Secrets Manager<br/>Component Credentials"]
+        end
+        
+        CW["📊 CloudWatch<br/>Logs & Metrics"]
+    end
+    
+    A -->|HTTPS| NLB
+    NLB -->|80| WEB
+    NLB -->|10000| JVB
+    WEB --> PROSODY
+    WEB --> JICOFO
+    JICOFO --> JVB
+    JVB -->|WebSocket| WEB
+    WEB --> S3
+    WEB --> SECRETS
+    JVB --> CW
+```
 
-Generally speaking, this aims to be a guide others can use to host video calls and enable streaming for their own communities, hosted on AWS.
+## Cost Model
+
+```mermaid
+pie title "Monthly Cost Breakdown (Regular Use: 2 hrs/day)"
+    "Fixed Infrastructure" : 16.62
+    "Variable ECS (60 hrs)" : 12.01
+    "Total" : 28.63
+```
+
+### Cost Breakdown
+
+**Fixed Costs (Always Running):**
+- Network Load Balancer: $16.20/month
+- S3 Storage: $0.02/month
+- AWS Secrets Manager: $0.40/month
+- **Total Fixed: $16.62/month**
+
+**Variable Costs (When Running):**
+- ECS Fargate (4 vCPU, 8GB RAM): $0.198/hour
+
+### Usage Scenarios
+
+| Scenario | Hours/Month | Variable | Total | vs. Zoom Pro |
+|----------|------------|----------|-------|-------------|
+| **Scaled Down** | 0 | $0.00 | **$16.62** | -100% |
+| **Light** | 10 | $1.98 | **$18.60** | +49% |
+| **Regular** | 60 (2hrs/day) | $12.01 | **$28.63** | +129% |
+| **Heavy** | 120 (4hrs/day) | $23.76 | **$40.38** | +223% |
+| **Always On** | 744 | $147.31 | **$163.93** | +1212% |
+
+**Key Advantage:** Scale-to-zero saves **$130.31/month** vs always-on deployment (97% savings)
+
+## Features
+
+### ✅ Self-Hosted
+- **Full Control**: Your data, your infrastructure, your domain
+- **No Third-Party Dependencies**: All video traffic stays within your AWS account
+- **100% Open Source**: Built on Jitsi Meet - no proprietary code
+
+### 💰 Cost Optimized
+- **Scale-to-Zero**: Automatic power down when idle
+- **Predictable Costs**: Fixed costs visible, variable costs per-hour
+- **Smart Scheduling**: Scale up before events, down after
+
+### 🔒 Secure
+- **End-to-End**: Industry-standard Jitsi encryption
+- **AWS Secrets Manager**: Secure credential storage
+- **TLS/SSL**: HTTPS by default, valid certificates
+- **IAM SSO**: Identity Center integration, no long-lived keys
+
+### 🌍 Domain-Agnostic
+- **Your Domain**: Deploy to any domain you own
+- **No Hardcoding**: Public repo doesn't expose your domain
+- **Configuration Management**: Private `config.json` for secrets
+- **Multi-Deployment Ready**: Deploy multiple instances to different domains
+
+### 📊 Observable
+- **CloudWatch Logs**: All container logs automatically collected
+- **CloudWatch Metrics**: CPU, memory, network monitoring
+- **Health Checks**: Automatic target group health verification
+- **Status Reporting**: Perl scripts provide detailed status
+
+### 🚀 Operational Tooling
+- **Perl Scripts**: Type-safe, reusable operational automation
+- **JitsiConfig Module**: Object-oriented configuration management
+- **10-Phase Testing**: Automated end-to-end testing
+- **Smart Power Management**: Scale-up, scale-down, power-down options
 
 ## Repository Structure
 
+This repository is **domain-agnostic** - no hardcoded domains or AWS profiles. Configuration is managed separately in a private repository.
+
 ```
-├── README.md           # Project overview and requirements
-├── CHANGELOG.md        # Project change history and releases
-├── CO_ORGANIZER_GUIDE.md # Management guide for NE3D/RGC3 teams
-├── AWS_SETUP.md        # AWS Identity Center setup guide
-├── DOMAIN_SETUP.md     # DNS and SSL certificate configuration
-├── TOOLING.md          # AI-assisted development workflow and tools
-├── TESTING.md          # Comprehensive testing guide and automation
-├── PRODUCTION_OPTIMIZATION.md # Production optimization guide
-├── PRODUCTION_SUMMARY.md # Production deployment summary
-├── ROADMAP.md          # Development roadmap and feature planning
-├── main.tf            # Main Terraform configuration
-├── variables.tf       # Terraform variables
-├── outputs.tf         # Terraform outputs
-├── scripts/           # Perl operational scripts
-│   ├── setup.pl       # Script initialization and permissions
-│   ├── test-platform.pl  # Complete testing workflow (10-phase)
-│   ├── scale-up.pl    # Scale service up with verification
-│   ├── scale-down.pl  # Scale service down with verification
-│   ├── power-down.pl  # Smart shutdown (97% cost savings)
-│   ├── fully-destroy.pl # Complete infrastructure destruction
-│   ├── check-health.pl # Multi-layer health verification
-│   └── status.pl      # Platform status reporting
-└── .gitignore         # Git exclusions
+jitsi-video-hosting/              # PUBLIC REPO
+├── README.md                      # Project overview (you are here)
+├── CONFIG_GUIDE.md               # Configuration system documentation
+├── DEPLOYMENT_GUIDE.md           # Step-by-step deployment instructions
+├── TESTING.md                    # Testing and validation guide
+├── TOOLING.md                    # Kiro CLI and development workflow
+├── PRODUCTION_OPTIMIZATION.md    # Security and performance tuning
+├── AWS_SETUP.md                  # AWS Identity Center setup
+├── DOMAIN_SETUP.md               # DNS and SSL configuration
+├── CHANGELOG.md                  # Project history and releases
+├── main.tf                       # Infrastructure-as-Code (Terraform)
+├── variables.tf                  # Terraform variables (no defaults)
+├── outputs.tf                    # Terraform outputs
+├── lib/
+│   └── JitsiConfig.pm           # Configuration management module (OOP)
+├── scripts/                      # Operational automation (Perl)
+│   ├── status.pl                # Platform status report
+│   ├── test-platform.pl         # 10-phase end-to-end testing
+│   ├── scale-up.pl              # Scale to 1 instance
+│   ├── scale-down.pl            # Scale to 0 instances
+│   ├── power-down.pl            # Delete compute (keep storage/NLB)
+│   ├── fully-destroy.pl         # Complete infrastructure destruction
+│   ├── check-health.pl          # Multi-layer health verification
+│   └── project-status.pl        # Detailed status reporting
+├── .kiro/steering/              # Kiro CLI context files
+│   ├── product.md              # Product goals and vision
+│   ├── tech.md                 # Technology stack and preferences
+│   └── structure.md            # Repository organization
+└── .gitignore                   # Git exclusions
+
+jitsi-video-hosting-ops/        # PRIVATE REPO (Your Configuration)
+├── config.json                  # ⚠️ NOT versioned (your secrets here)
+├── config.json.template         # Template for setup
+├── CONFIG_SETUP.md             # Private repo setup instructions
+└── OPERATIONS.md               # Sensitive operational details
 ```
 
-## Service Endpoint
+**Key Principle**: Public repo = reusable code. Private repo = your configuration.
 
-The platform is to be accessible at the following publicly registered domain:
-**`https://meet.awsaerospace.org`**
+## Configuration System
 
-## Cost Analysis 💰
+```mermaid
+graph LR
+    subgraph "Configuration Sources (Priority Order)"
+        ENV["🔧 Environment Variables<br/>JITSI_DOMAIN<br/>JITSI_AWS_PROFILE"]
+        PRIVATE["🔐 Private config.json<br/>../jitsi-video-hosting-ops/"]
+        DEFAULTS["📝 Code Defaults<br/>lib/JitsiConfig.pm"]
+    end
+    
+    subgraph "JitsiConfig Module"
+        CONFIG["🔄 Configuration Loading<br/>Merges all sources<br/>Validates required fields"]
+    end
+    
+    subgraph "Used By"
+        SCRIPTS["📜 Perl Scripts<br/>status.pl<br/>scale-up.pl<br/>test-platform.pl"]
+        TF["🏗️ Terraform<br/>main.tf<br/>variables.tf"]
+    end
+    
+    ENV -->|highest| CONFIG
+    PRIVATE -->|medium| CONFIG
+    DEFAULTS -->|lowest| CONFIG
+    CONFIG --> SCRIPTS
+    CONFIG --> TF
+```
+
+**Why This Matters:**
+- ✅ Fork this repo and deploy to YOUR domain
+- ✅ Your secrets never appear in git history
+- ✅ Same code works for everyone
+- ✅ Easy to manage multiple deployments
+
+## Quick Testing
 
 ### Monthly Cost Breakdown
 
@@ -122,7 +272,7 @@ This will:
 ### Manual Testing
 
 1. **Start Platform**: `./scripts/scale-up.pl`
-2. **Open Browser**: Navigate to https://meet.awsaerospace.org
+2. **Open Browser**: Navigate to your configured domain (https://meet.yourdomain.com)
 3. **Create Room**: Enter any room name (e.g., "test-meeting")
 4. **Join Call**: Click "Join" - you should see video/audio interface
 5. **Stop Platform**: `./scripts/scale-down.pl` (for cost savings)
@@ -137,52 +287,96 @@ If you encounter "You have been disconnected":
 
 See **[TESTING.md](TESTING.md)** for detailed testing documentation.
 
+## Deployment Workflow
+
+```mermaid
+graph LR
+    START["🚀 START<br/>Clone Repo"] -->|1| FORK["🔀 Fork & Clone<br/>Both Repos"]
+    FORK -->|2| CONFIG["⚙️ Setup Config<br/>config.json"]
+    CONFIG -->|3| AWS["📋 AWS Setup<br/>Identity Center"]
+    AWS -->|4| DOMAIN["🌐 Domain Setup<br/>DNS & SSL"]
+    DOMAIN -->|5| TF["🏗️ Deploy<br/>terraform apply"]
+    TF -->|6| TEST["🧪 Test<br/>./test-platform.pl"]
+    TEST -->|7| LIVE{"✅ Success?"}
+    LIVE -->|Yes| DONE["🎉 Live!<br/>Ready for Users"]
+    LIVE -->|No| DEBUG["🔧 Debug<br/>TESTING.md"]
+    DEBUG -->|Fix| TF
+    
+    style DONE fill:#90EE90
+    style START fill:#87CEEB
+    style LIVE fill:#FFD700
+```
+
+Each step has detailed documentation:
+1. **DEPLOYMENT_GUIDE.md** - Complete walkthrough
+2. **CONFIG_GUIDE.md** - Configuration details
+3. **AWS_SETUP.md** - AWS account setup
+4. **DOMAIN_SETUP.md** - DNS and SSL
+5. **TESTING.md** - Validation and debugging
+
 ## Deployment Success ✅
 
 The platform has been successfully deployed and is **fully operational**:
 
-- ✅ **Video calls working** - WebSocket connectivity resolved
-- ✅ **SSL/TLS encryption** - Valid certificate for meet.awsaerospace.org
+- ✅ **Video calls working** - WebSocket connectivity enabled
+- ✅ **SSL/TLS encryption** - Valid certificates for any domain
 - ✅ **Scale-to-zero architecture** - Cost optimization when not in use
-- ✅ **Multi-container setup** - All Jitsi components running correctly
+- ✅ **Multi-container setup** - All Jitsi components running
 - ✅ **AWS Secrets Manager** - Secure credential management
 - ✅ **CloudWatch monitoring** - Comprehensive logging and metrics
-
-### Key Issues Resolved
-
-1. **Container Configuration** - Fixed Fargate compatibility issues
-2. **Secrets Management** - Resolved IAM permissions for Secrets Manager
-3. **WebSocket Connectivity** - Enabled JVB WebSocket support for video calls
-4. **XMPP Communication** - Fixed inter-container communication using localhost
+- ✅ **Domain-agnostic** - No hardcoded values, configuration-driven
 
 ### Current Architecture
 
-- **Task Definition**: Revision 4 with WebSocket support
+- **Task Definition**: Multi-container Jitsi stack with WebSocket support
 - **Container Count**: 4 containers (jitsi-web, prosody, jicofo, jvb)
-- **Resource Allocation**: 4 vCPU / 8GB RAM
+- **Resource Allocation**: 4 vCPU / 8GB RAM (configurable)
 - **Network**: Network Load Balancer with TLS termination
-- **Storage**: S3 bucket for video recordings (when enabled)
-- **Cost Optimization**: Scale-to-zero when not in use
+- **Storage**: S3 bucket for video recordings
+- **Cost Optimization**: Automatic scale-to-zero when idle
 
 ## Next Steps & Roadmap
 
-### Phase 2: Authentication & Custom Branding ([Issue #14](https://github.com/BryanChasko/jitsi-video-hosting/issues/14))
-- **Cognito Authentication**: Implement gated community access with manual user creation
-- **Social Login**: GitHub/Google integration for awsaerospace.org community
-- **Custom Branding**: Replace Jitsi branding with AWS Aerospace theme
-- **User Management**: Admin-controlled user creation and role management
+```mermaid
+graph TD
+    A["📍 Current State<br/>Core Platform Live"] -->|Phase 2| B["🔐 Authentication<br/>Cognito/OAuth"]
+    B -->|Phase 3| C["🎥 Recording<br/>Jibri Support"]
+    B -->|Phase 3| D["📊 Monitoring<br/>Advanced Dashboards"]
+    C -->|Phase 3| E["🔒 Security<br/>Hardening"]
+    D --> F["✨ Production Ready<br/>Enterprise Features"]
+    E --> F
+    
+    style A fill:#90EE90
+    style F fill:#FFD700
+```
 
-### Phase 3: Enhanced Features
-- **Video Recording**: EKS-based Jibri service for privileged container support ([Issue #16](https://github.com/BryanChasko/jitsi-video-hosting/issues/16))
-- **Private Operations**: Separate private repository for sensitive operational files ([Issue #15](https://github.com/BryanChasko/jitsi-video-hosting/issues/15))
-- **Advanced Monitoring**: Enhanced CloudWatch dashboards and alerting ([Issue #12](https://github.com/BryanChasko/jitsi-video-hosting/issues/12))
-- **Security Hardening**: Secret rotation and compliance features ([Issue #13](https://github.com/BryanChasko/jitsi-video-hosting/issues/13))
+### Planned Features
 
-### Community Integration
-- Integration with existing awsaerospace.org website authentication
-- Custom meeting features for AWS user groups (NE3D, RGC3)
-- Meeting scheduling and community announcements
-- Mobile-responsive design and PWA capabilities
+- **Phase 2: Authentication & Branding**
+  - Cognito authentication for gated access
+  - Social login (GitHub, Google)
+  - Custom branding for your organization
+
+- **Phase 3: Enhanced Features**
+  - Video recording with Jibri service
+  - Advanced CloudWatch dashboards
+  - Security hardening and compliance
+  - Secret rotation automation
+
+## Contributing
+
+This is a reusable reference implementation. If you:
+- Find issues or bugs, [open an issue](https://github.com/BryanChasko/jitsi-video-hosting/issues)
+- Have improvements, [submit a PR](https://github.com/BryanChasko/jitsi-video-hosting/pulls)
+- Want to deploy it yourself, start with [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+
+**Remember**: All domain-specific configuration goes in your private `jitsi-video-hosting-ops` repo, not here.
+
+## License
+
+This project uses [Jitsi Meet](https://github.com/jitsi/jitsi-meet), which is licensed under [AGPL v3](https://www.gnu.org/licenses/agpl-3.0.en.html).
+
+The infrastructure code (Terraform, Perl scripts) is provided as-is for reference and educational purposes.
 
 ## Jitsi Application Requirements (The "What")
 
@@ -223,6 +417,24 @@ Use these guidelines to ensure the generated code is accurate and aligns with al
 | **Jitsi Ports** | Project requirements for Jitsi ports (443 TCP, 10000 UDP) | Implement the Network Load Balancer (NLB) resource with the correct listeners and target groups for Jitsi traffic. |
 | **Cost Control** | ECS Fargate Service parameters | Write the base ECS Fargate service Terraform, ensuring the initial `desired_count` is set to **`0`** to support the scale-to-zero requirement. |
 | **Security** | IAM Policy and Task Definition files | Review the generated IAM Policy for the ECS Task Role against the principle of least privilege, using the established requirements. |
+
+---
+
+## Blog Articles & Learning Resources
+
+### Featured Blog Articles
+
+📖 **[ECS Express Mode Migration Guide](./blog/BLOG_JITSI_ECS_EXPRESS.md)** - How we migrated from standard ECS to ECS Express Mode, reducing Terraform from 1,013 to ~450 lines while maintaining scale-to-zero capabilities. Includes cost comparisons, operational impacts, and lessons learned.
+
+🔧 **[Spec-Driven Infrastructure with Kiro CLI](./blog/BLOG_KIRO_TERRAFORM.md)** - How we set up our VS Code workspace with GitHub Copilot and Kiro CLI to automate infrastructure migrations. Covers spec-driven workflow, workspace configuration, and best practices for AI-assisted IaC development.
+
+### Project Roadmap & Issues
+
+🗺️ **[GitHub Issues & Roadmap](./GITHUB_ISSUES_REVIEW.md)** - Complete roadmap with phases, priorities, and implementation status
+
+🔗 **[GitHub Issues](https://github.com/BryanChasko/jitsi-video-hosting/issues)** - Track specific features, bugs, and improvements on GitHub
+
+📋 **[Change Log](./SESSION_CHANGELOG.md)** - Detailed changelog of all project changes and decisions
 
 ---
 

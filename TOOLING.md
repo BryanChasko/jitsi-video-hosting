@@ -2,32 +2,33 @@
 
 This document outlines the development tools and AI-assisted workflow used to build the Jitsi video hosting platform.
 
-## AI-Assisted Development with Amazon Q
+## AI-Assisted Development with Kiro CLI
 
-This project was built using **Amazon Q Developer** as the primary AI assistant, demonstrating modern AI-assisted infrastructure development practices.
+This project is built using **Kiro CLI** as the primary AI assistant for spec-driven infrastructure development, demonstrating modern AI-assisted IaC practices.
 
-### Amazon Q IDE Integration
+### Kiro CLI Setup
 
-**Setup**: Amazon Q plugin installed in IDE for real-time code assistance
-- **Code Generation**: Infrastructure-as-Code (Terraform) generation
-- **Documentation**: Automated documentation generation and updates
-- **Debugging**: Real-time error analysis and resolution
-- **Best Practices**: AWS security and architecture recommendations
+**Installation**: Kiro CLI installed and configured for AI-assisted development
+- **Spec-Driven Development**: `/specify` to create formal requirements
+- **Infrastructure Generation**: Automatic Terraform generation from specs
+- **Code Review**: AI-powered code analysis and improvements
+- **MCP Integration**: Model Context Protocol for AWS tools and deployment
 
-### Amazon Q GitHub Integration
+### Kiro Workflow
 
-**GitHub Integration**: Connected Amazon Q to GitHub repository for automated development workflows
+**Development Flow**: Requirements → Design → Implementation
 
-#### Slash Commands Used:
-- `/q dev` - Automatically implement features and bug fixes via pull requests
-- `/q review` - Automated code reviews with security and quality feedback
-- `/q help` - Access Amazon Q Developer documentation and features
+#### Key Commands:
+- `/specify "description"` - Create formal specification with AI analysis
+- `/powers activate aws-labs/ecs-express` - Enable ECS Express Mode
+- `@autonomous-agent "task"` - Delegate tasks to autonomous agents
+- `@aws-tools/deploy` - Deploy using AWS tools MCP
 
 #### Workflow:
-1. **Issue Creation**: Used GitHub CLI to create structured issues
-2. **AI Implementation**: Added `/q dev` to issues for automatic implementation
-3. **Code Review**: Amazon Q provides automated PR reviews
-4. **Iteration**: Continuous improvement through AI feedback
+1. **Specification**: Use `/specify` to create formal requirements document
+2. **Design**: Review auto-generated `design.md` for architecture
+3. **Implementation**: Execute tasks from `tasks.md` with `@autonomous-agent`
+4. **Validation**: Deploy with `@aws-tools/deploy` and verify
 
 ## Command Line Tools
 
@@ -106,7 +107,7 @@ terraform state show aws_lb.jitsi
 4. **State Isolation**: Infrastructure state separate from DNS state
 
 #### AI-Assisted Terraform Development
-- **Code Generation**: Amazon Q generated initial resource configurations
+- **Code Generation**: Kiro CLI generates Terraform from specifications
 - **Best Practices**: AI recommended security groups, IAM policies, encryption
 - **Error Resolution**: Real-time debugging of Terraform syntax and logic
 - **Resource Optimization**: AI suggested cost-effective resource sizing
@@ -115,7 +116,7 @@ terraform state show aws_lb.jitsi
 ## Development Workflow
 
 ### 1. AI-Assisted Planning
-- Amazon Q analyzed requirements and suggested architecture
+- Kiro CLI analyzed requirements and designed scale-to-zero architecture
 - Generated initial Terraform configurations
 - Provided security and best practices guidance
 
@@ -126,7 +127,7 @@ terraform state show aws_lb.jitsi
 
 ### 3. GitHub Integration
 - Created issues with `/q dev` for automated implementation
-- Amazon Q generated pull requests with complete solutions
+- Kiro CLI autonomous agents generated implementation tasks
 - Automated code reviews and security analysis
 
 ### 4. Cross-Account Management
@@ -294,4 +295,4 @@ perl -c scripts/script-name.pl
 - **Module Development**: AI-generated reusable Terraform modules
 - **Lambda Functions**: AI-generated Rust/Python functions on Graviton processors
 
-This project serves as a reference implementation for AI-assisted infrastructure development using Amazon Q Developer and modern DevOps practices.
+This project serves as a reference implementation for spec-driven infrastructure development using Kiro CLI, Terraform, and modern DevOps practices.

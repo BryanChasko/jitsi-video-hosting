@@ -1,12 +1,13 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use lib '../lib';
+use JitsiConfig;
 
-# Fully Destroy - Complete infrastructure teardown (equivalent to terraform destroy)
-# WARNING: This removes EVERYTHING including S3 buckets, secrets, IAM roles, etc.
-
-my $region = "us-west-2";
-my $profile = "jitsi-dev";
+# Load configuration from JitsiConfig
+my $config = JitsiConfig->new();
+my $region = $config->aws_region();
+my $profile = $config->aws_profile();
 
 print "\033[31m[WARNING]\033[0m This will COMPLETELY DESTROY all Jitsi platform infrastructure\n";
 print "\033[31m[WARNING]\033[0m Including S3 buckets, secrets, IAM roles, and all data\n";

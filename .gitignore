@@ -24,5 +24,9 @@ Thumbs.db
 # Logs
 *.log
 
+# Blog drafts (published articles hosted on AWS Builder Center)
+blog/BLOG_JITSI_ECS_EXPRESS.md
+blog/BLOG_KIRO_TERRAFORM.md
+
 # Exclude the internal operations document
 OPERATIONS.md

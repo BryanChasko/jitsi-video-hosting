@@ -1,3 +1,14 @@
+variable "aws_profile" {
+  description = "AWS CLI profile name (set via TF_VAR_aws_profile or JITSI_AWS_PROFILE env var)"
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.aws_profile != null && var.aws_profile != ""
+    error_message = "aws_profile must be provided. Set TF_VAR_aws_profile env var or JITSI_AWS_PROFILE."
+  }
+}
+
 variable "aws_region" {
   description = "AWS region for deployment"
   type        = string
@@ -29,9 +40,14 @@ variable "public_subnet_cidrs" {
 }
 
 variable "domain_name" {
-  description = "Domain name for the Jitsi platform"
+  description = "Domain name for the Jitsi platform (set via TF_VAR_domain_name or JITSI_DOMAIN env var)"
   type        = string
-  default     = "meet.awsaerospace.org"
+  default     = null
+
+  validation {
+    condition     = var.domain_name != null && var.domain_name != ""
+    error_message = "domain_name must be provided. Set TF_VAR_domain_name env var or JITSI_DOMAIN."
+  }
 }
 
 variable "task_cpu" {

@@ -2,13 +2,16 @@
 use strict;
 use warnings;
 use JSON;
+use lib '../lib';
+use JitsiConfig;
 
-# Project configuration
+# Load configuration from JitsiConfig
+my $config = JitsiConfig->new();
 my $project_name = "Jitsi Video Platform";
-my $cluster_name = "jitsi-video-platform-cluster";
-my $service_name = "jitsi-video-platform-service";
-my $nlb_name = "jitsi-video-platform-nlb";
-my $aws_profile = "jitsi-dev";
+my $cluster_name = $config->cluster_name();
+my $service_name = $config->service_name();
+my $nlb_name = $config->nlb_name();
+my $aws_profile = $config->aws_profile();
 
 # Function to execute AWS CLI command and return JSON result
 sub aws_cli_json {

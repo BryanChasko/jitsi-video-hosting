@@ -2,14 +2,15 @@
 use strict;
 use warnings;
 use JSON;
+use lib '../lib';
+use JitsiConfig;
 
-# Power Down - Removes compute resources but keeps static/low-cost resources
-# Preserves: IAM roles, S3 buckets, Secrets Manager, CloudWatch logs, etc.
-
-my $cluster = "jitsi-video-platform-cluster";
-my $service = "jitsi-video-platform-service";
-my $region = "us-west-2";
-my $profile = "jitsi-dev";
+# Load configuration from JitsiConfig
+my $config = JitsiConfig->new();
+my $cluster = $config->cluster_name();
+my $service = $config->service_name();
+my $region = $config->aws_region();
+my $profile = $config->aws_profile();
 
 print "\033[34m[INFO]\033[0m Starting Jitsi Platform Power-Down Process\n\n";
 
