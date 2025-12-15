@@ -71,6 +71,83 @@ graph TB
     JVB --> CW
 ```
 
+## Desired Architecture (ECS Express Mode)
+
+```mermaid
+graph TB
+    subgraph "Your Domain"
+        A["🌐 Your Domain<br/>meet.yourdomain.com"]
+    end
+
+    subgraph "AWS - Us-West-2"
+        subgraph "ECS Express"
+            EXNLB["🔗 NLB (auto-managed)<br/>443 TLS · 10000 UDP"]
+            EXSVC["⚡ Service (Express Mode)<br/>Simplified task + scaling"]
+
+            subgraph "Jitsi Task (Fargate)"
+                WEBX["🌐 Jitsi Web"]
+                PROSX["🔊 Prosody"]
+                JICX["📞 Jicofo"]
+                JVBX["📹 JVB"]
+            end
+        end
+
+        S3X["🗂️ S3 Bucket<br/>Recordings"]
+        SECX["🔐 Secrets Manager"]
+        CWX["📊 CloudWatch"]
+    end
+
+    A -->|HTTPS| EXNLB
+    EXNLB --> EXSVC
+    EXSVC --> WEBX
+    EXSVC -. UDP/10000 .-> JVBX
+    WEBX --> PROSX
+    WEBX --> JICX
+    JICX --> JVBX
+    WEBX --> S3X
+    WEBX --> SECX
+    JVBX --> CWX
+```
+
+- Built-in: Auto-provisioned NLB, listeners, target groups
+- Simpler: Condensed task/service config with sane defaults
+- Consistent: First-class scale-to-zero patterns remain intact
+
+Learn more in the migration deep dive: `blog/BLOG_JITSI_ECS_EXPRESS.md`.
+
+### Impact of ECS Express on This Project
+
+- Less Terraform: ~55% fewer lines by removing manual NLB/listener/target-group resources.
+- Same cost model: Fixed (NLB) + variable (Fargate) costs unchanged.
+- Scale-to-zero preserved: `desired_count = 0` by default; operational Perl scripts continue to control scaling.
+- Certificates & DNS: ACM certificates and cross-account DNS validation remain the same.
+- Health defaults: Express provides sane defaults; our container health checks and timeouts remain compatible.
+- Config unchanged: Domain-agnostic design with `JitsiConfig` continues to work without modifications.
+
+#### Terraform Changes (Representative Diff)
+
+```diff
+- resource "aws_lb" "jitsi_nlb" { ... }
+- resource "aws_lb_listener" "https_443" { ... }
+- resource "aws_lb_listener" "udp_10000" { ... }
+- resource "aws_lb_target_group" "web_tg" { ... }
+- resource "aws_lb_target_group" "jvb_tg" { ... }
+- resource "aws_lb_target_group_attachment" "web" { ... }
+- resource "aws_lb_target_group_attachment" "jvb" { ... }
+
+// Replaced by ECS Express-managed load balancer and listeners
+
+resource "aws_ecs_service" "jitsi" {
+    name            = var.project_name
+    cluster         = aws_ecs_cluster.main.id
+    launch_type     = "FARGATE"
+    desired_count   = 0
+    # Express Mode: service annotations/parameters drive NLB setup automatically
+}
+```
+
+ECS Express config collapses multiple LB resources into service-level configuration while preserving our scale-to-zero and health behavior.
+
 ## Cost Model
 
 ```mermaid

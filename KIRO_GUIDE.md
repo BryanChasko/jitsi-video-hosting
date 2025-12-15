@@ -41,6 +41,16 @@ kiro-cli
   - Manage HCP Terraform workspaces and runs.
   - Search provider docs (`search_providers`, `get_provider_details`).
 - **Configuration**: Requires `TFE_TOKEN` for HCP features.
+ 
+#### `hashicorp/terraform` (Active)
+- **Purpose**: Authoring, validating, and operating Terraform with spec-driven assistance.
+- **Capabilities**:
+  - Registry lookups (providers, modules) and doc retrieval.
+  - Plan scaffolding and HCL generation from specifications.
+  - Workspace/run management for HCP Terraform (optional).
+  - Formatting and validation hooks (`terraform fmt`, `terraform validate`).
+- **Activation**: `/powers activate hashicorp/terraform`
+- **Configuration**: Optional `TFE_TOKEN` for HCP features; local CLI works without it.
 
 ---
 
@@ -82,6 +92,27 @@ We utilize Kiro's structured workflow to ensure quality and traceability during 
 - **Action**: Kiro writes code and runs commands.
 - **Safety**: Kiro asks permission before installing dependencies or running tests.
 - **Verification**: Review code DIFFs before they are applied.
+
+### Step 5: Terraform Power Usage
+- **Activate Power**:
+  ```
+  /powers activate hashicorp/terraform
+  ```
+- **Generate HCL from Spec**:
+  ```
+  /specify "Collapse manual NLB resources by adopting ECS Express-managed LB; preserve desired_count=0 and health checks"
+  ```
+  Kiro proposes HCL changes and shows diffs.
+- **Validate & Format**:
+  ```
+  terraform fmt
+  terraform validate
+  ```
+- **Plan & Apply (Safety First)**:
+  ```
+  terraform plan -out=tfplan
+  terraform apply tfplan
+  ```
 
 ---
 
