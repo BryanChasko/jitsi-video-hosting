@@ -1,6 +1,46 @@
 # AWS Setup Guide
 
-## AWS IAM Identity Center Setup 🔑
+## Current Configuration (December 2025)
+
+### Jitsi Hosting Account
+- **Account ID**: `215665149509`
+- **AWS Profile**: `jitsi-hosting`
+- **Region**: `us-west-2`
+- **IAM Identity Center**:
+  - Instance ID: `ssoins-7907a9f3d93386c6`
+  - SSO Portal URL: `https://d-9267ec26ec.awsapps.com/start`
+  - User: `bryanchasko-aws-ug-jitsi-hosting`
+  - Group: `builders`
+  - Permission Set: `AdministratorAccess`
+
+### AWS CLI Configuration
+
+```bash
+# Add to ~/.aws/config (if not already present)
+[sso-session jitsi-hosting-org]
+sso_start_url = https://d-9267ec26ec.awsapps.com/start
+sso_region = us-west-2
+sso_registration_scopes = sso:account:access
+
+[profile jitsi-hosting]
+sso_session = jitsi-hosting-org
+sso_account_id = 215665149509
+sso_role_name = AdministratorAccess
+region = us-west-2
+output = json
+```
+
+```bash
+# Login to SSO
+aws sso login --sso-session jitsi-hosting-org
+
+# Verify credentials
+aws sts get-caller-identity --profile jitsi-hosting
+```
+
+---
+
+## AWS IAM Identity Center Setup 🔑 (For New Deployments)
 
 ### 1. Enable Identity Center
 1. Log into your AWS root account

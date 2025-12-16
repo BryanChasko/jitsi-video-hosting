@@ -140,96 +140,31 @@ resource "aws_security_group" "jitsi" {
   }
 }
 
-# Network Load Balancer
-resource "aws_lb" "jitsi" {
-  name               = "${var.project_name}-nlb"
-  internal           = false
-  load_balancer_type = "network"
-  subnets            = aws_subnet.public[*].id
+# JVB Network Load Balancer (On-Demand)
+module "jvb_nlb" {
+  source = "./modules/jvb-nlb"
+  count  = var.nlb_enabled ? 1 : 0
 
-  enable_deletion_protection = false
+  project_name      = var.project_name
+  environment       = var.environment
+  vpc_id            = aws_vpc.main.id
+  subnet_ids        = aws_subnet.public[*].id
+  security_group_id = aws_security_group.jitsi.id
+}
+
+# Service Discovery Namespace for ECS Service Connect
+resource "aws_service_discovery_private_dns_namespace" "jitsi" {
+  name = "${var.project_name}.local"
+  vpc  = aws_vpc.main.id
 
   tags = {
-    Name        = "${var.project_name}-nlb"
+    Name        = "${var.project_name}-service-discovery"
     Project     = var.project_name
     Environment = var.environment
   }
 }
 
-# Target Group for HTTPS
-resource "aws_lb_target_group" "jitsi_https" {
-  name        = "${var.project_name}-https-tg"
-  port        = 80
-  protocol    = "TCP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "ip"
-
-  health_check {
-    enabled             = true
-    healthy_threshold   = 2
-    protocol            = "HTTP"
-    path                = "/"
-    port                = "80"
-    unhealthy_threshold = 2
-    timeout             = 5
-    interval            = 30
-  }
-
-  tags = {
-    Name        = "${var.project_name}-https-tg"
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-# Target Group for JVB UDP
-resource "aws_lb_target_group" "jitsi_jvb" {
-  name        = "${var.project_name}-jvb-tg"
-  port        = 10000
-  protocol    = "UDP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "ip"
-
-  health_check {
-    enabled             = true
-    healthy_threshold   = 2
-    protocol            = "TCP"
-    port                = "443"
-    unhealthy_threshold = 2
-  }
-
-  tags = {
-    Name        = "${var.project_name}-jvb-tg"
-    Project     = var.project_name
-    Environment = var.environment
-  }
-}
-
-# NLB Listener for JVB UDP
-resource "aws_lb_listener" "jitsi_jvb" {
-  load_balancer_arn = aws_lb.jitsi.arn
-  port              = "10000"
-  protocol          = "UDP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.jitsi_jvb.arn
-  }
-}
-
-# HTTPS Listener for NLB (TLS with certificate)
-resource "aws_lb_listener" "jitsi_https_tls" {
-  load_balancer_arn = aws_lb.jitsi.arn
-  port              = "443"
-  protocol          = "TLS"
-  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
-  certificate_arn   = "arn:aws:acm:us-west-2:668383289911:certificate/ca18accd-3d2a-4ca5-9510-c2dec36fa355"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.jitsi_https.arn
-  }
-}
+# ECS Express Mode handles load balancing automatically
 
 
 # ECS Cluster
@@ -302,7 +237,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# IAM Policy for ECS Task Execution (Secrets Manager access)
+# IAM Policy for ECS Task Execution (SSM Parameter Store access)
 resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
   name = "${var.project_name}-ecs-task-execution-secrets-policy"
   role = aws_iam_role.ecs_task_execution.id
@@ -313,15 +248,16 @@ resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
       {
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetSecretValue"
+          "ssm:GetParameter",
+          "ssm:GetParameters"
         ]
-        Resource = aws_secretsmanager_secret.jitsi_secrets.arn
+        Resource = "arn:aws:ssm:${var.aws_region}:*:parameter/${var.project_name}/*"
       }
     ]
   })
 }
 
-# IAM Policy for ECS Task (S3 access for video storage and Secrets Manager)
+# IAM Policy for ECS Task (S3 access for video storage and SSM Parameter Store)
 resource "aws_iam_role_policy" "ecs_task_s3" {
   name = "${var.project_name}-ecs-task-s3-policy"
   role = aws_iam_role.ecs_task.id
@@ -348,9 +284,10 @@ resource "aws_iam_role_policy" "ecs_task_s3" {
       {
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetSecretValue"
+          "ssm:GetParameter",
+          "ssm:GetParameters"
         ]
-        Resource = aws_secretsmanager_secret.jitsi_secrets.arn
+        Resource = "arn:aws:ssm:${var.aws_region}:*:parameter/${var.project_name}/*"
       }
     ]
   })
@@ -398,27 +335,65 @@ resource "random_password" "jigasi_auth_password" {
   special = true
 }
 
-# AWS Secrets Manager secrets for Jitsi authentication
-resource "aws_secretsmanager_secret" "jitsi_secrets" {
-  name        = "${var.project_name}-jitsi-secrets"
-  description = "Authentication secrets for Jitsi Meet components"
+# SSM Parameter Store for Jitsi authentication secrets
+resource "aws_ssm_parameter" "jicofo_component_secret" {
+  name  = "/${var.project_name}/jicofo_component_secret"
+  type  = "SecureString"
+  value = random_password.jicofo_component_secret.result
 
   tags = {
-    Name        = "${var.project_name}-jitsi-secrets"
+    Name        = "${var.project_name}-jicofo-component-secret"
     Project     = var.project_name
     Environment = var.environment
   }
 }
 
-resource "aws_secretsmanager_secret_version" "jitsi_secrets" {
-  secret_id = aws_secretsmanager_secret.jitsi_secrets.id
-  secret_string = jsonencode({
-    jicofo_component_secret = random_password.jicofo_component_secret.result
-    jicofo_auth_password    = random_password.jicofo_auth_password.result
-    jvb_component_secret    = random_password.jvb_component_secret.result
-    jvb_auth_password       = random_password.jvb_auth_password.result
-    jigasi_auth_password    = random_password.jigasi_auth_password.result
-  })
+resource "aws_ssm_parameter" "jicofo_auth_password" {
+  name  = "/${var.project_name}/jicofo_auth_password"
+  type  = "SecureString"
+  value = random_password.jicofo_auth_password.result
+
+  tags = {
+    Name        = "${var.project_name}-jicofo-auth-password"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_ssm_parameter" "jvb_component_secret" {
+  name  = "/${var.project_name}/jvb_component_secret"
+  type  = "SecureString"
+  value = random_password.jvb_component_secret.result
+
+  tags = {
+    Name        = "${var.project_name}-jvb-component-secret"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_ssm_parameter" "jvb_auth_password" {
+  name  = "/${var.project_name}/jvb_auth_password"
+  type  = "SecureString"
+  value = random_password.jvb_auth_password.result
+
+  tags = {
+    Name        = "${var.project_name}-jvb-auth-password"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_ssm_parameter" "jigasi_auth_password" {
+  name  = "/${var.project_name}/jigasi_auth_password"
+  type  = "SecureString"
+  value = random_password.jigasi_auth_password.result
+
+  tags = {
+    Name        = "${var.project_name}-jigasi-auth-password"
+    Project     = var.project_name
+    Environment = var.environment
+  }
 }
 
 # S3 Bucket versioning
@@ -468,6 +443,7 @@ resource "aws_ecs_task_definition" "jitsi" {
       essential = true
       portMappings = [
         {
+          name          = "web"
           containerPort = 80
           protocol      = "tcp"
         },
@@ -529,19 +505,19 @@ resource "aws_ecs_task_definition" "jitsi" {
       secrets = [
         {
           name      = "JICOFO_COMPONENT_SECRET"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_component_secret::"
+          valueFrom = aws_ssm_parameter.jicofo_component_secret.arn
         },
         {
           name      = "JICOFO_AUTH_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_auth_password::"
+          valueFrom = aws_ssm_parameter.jicofo_auth_password.arn
         },
         {
           name      = "JVB_COMPONENT_SECRET"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_component_secret::"
+          valueFrom = aws_ssm_parameter.jvb_component_secret.arn
         },
         {
           name      = "JVB_AUTH_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_auth_password::"
+          valueFrom = aws_ssm_parameter.jvb_auth_password.arn
         }
       ]
       healthCheck = {
@@ -625,23 +601,23 @@ resource "aws_ecs_task_definition" "jitsi" {
       secrets = [
         {
           name      = "JICOFO_COMPONENT_SECRET"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_component_secret::"
+          valueFrom = aws_ssm_parameter.jicofo_component_secret.arn
         },
         {
           name      = "JICOFO_AUTH_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_auth_password::"
+          valueFrom = aws_ssm_parameter.jicofo_auth_password.arn
         },
         {
           name      = "JVB_AUTH_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_auth_password::"
+          valueFrom = aws_ssm_parameter.jvb_auth_password.arn
         },
         {
           name      = "JVB_COMPONENT_SECRET"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_component_secret::"
+          valueFrom = aws_ssm_parameter.jvb_component_secret.arn
         },
         {
           name      = "JIGASI_XMPP_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jigasi_auth_password::"
+          valueFrom = aws_ssm_parameter.jigasi_auth_password.arn
         }
       ]
       logConfiguration = {
@@ -702,11 +678,11 @@ resource "aws_ecs_task_definition" "jitsi" {
       secrets = [
         {
           name      = "JICOFO_COMPONENT_SECRET"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_component_secret::"
+          valueFrom = aws_ssm_parameter.jicofo_component_secret.arn
         },
         {
           name      = "JICOFO_AUTH_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jicofo_auth_password::"
+          valueFrom = aws_ssm_parameter.jicofo_auth_password.arn
         }
       ]
       logConfiguration = {
@@ -724,8 +700,14 @@ resource "aws_ecs_task_definition" "jitsi" {
       essential = true
       portMappings = [
         {
+          name          = "jvb-udp"
           containerPort = 10000
           protocol      = "udp"
+        },
+        {
+          name          = "jvb-tcp"
+          containerPort = 4443
+          protocol      = "tcp"
         }
       ]
       environment = [
@@ -750,6 +732,18 @@ resource "aws_ecs_task_definition" "jitsi" {
           value = "10000"
         },
         {
+          name  = "JVB_TCP_PORT"
+          value = "4443"
+        },
+        {
+          name  = "JVB_TCP_HARVESTER_DISABLED"
+          value = "false"
+        },
+        {
+          name  = "DOCKER_HOST_ADDRESS"
+          value = "AUTO"
+        },
+        {
           name  = "JVB_ADVERTISE_IPS"
           value = "AUTO"
         },
@@ -771,7 +765,7 @@ resource "aws_ecs_task_definition" "jitsi" {
         },
         {
           name  = "JVB_TCP_HARVESTER_DISABLED"
-          value = "true"
+          value = "false"
         },
         {
           name  = "JVB_TCP_PORT"
@@ -809,11 +803,11 @@ resource "aws_ecs_task_definition" "jitsi" {
       secrets = [
         {
           name      = "JVB_AUTH_PASSWORD"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_auth_password::"
+          valueFrom = aws_ssm_parameter.jvb_auth_password.arn
         },
         {
           name      = "JVB_COMPONENT_SECRET"
-          valueFrom = "${aws_secretsmanager_secret.jitsi_secrets.arn}:jvb_component_secret::"
+          valueFrom = aws_ssm_parameter.jvb_component_secret.arn
         }
       ]
       logConfiguration = {
@@ -889,16 +883,27 @@ resource "aws_ecs_service" "jitsi" {
     assign_public_ip = true
   }
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.jitsi_https.arn
-    container_name   = "jitsi-web"
-    container_port   = 80
-  }
+  service_connect_configuration {
+    enabled   = true
+    namespace = aws_service_discovery_private_dns_namespace.jitsi.arn
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.jitsi_jvb.arn
-    container_name   = "jvb"
-    container_port   = 10000
+    service {
+      client_alias {
+        port     = 80
+        dns_name = "jitsi-web"
+      }
+      port_name      = "web"
+      discovery_name = "jitsi-web"
+    }
+
+    log_configuration {
+      log_driver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.jitsi.name
+        "awslogs-region"        = var.aws_region
+        "awslogs-stream-prefix" = "service-connect"
+      }
+    }
   }
 
   tags = {

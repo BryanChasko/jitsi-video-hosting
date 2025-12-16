@@ -31,6 +31,70 @@ See `CONFIG_GUIDE.md` for implementation details.
 - **Agent-to-Agent**: Leverage MCP tooling and autonomous agent workflows
 - **Scale-to-Zero**: ALL infrastructure must power down when idle
 - **Data Format**: Markdown for docs, vectors for data (S3 Vectors compatible)
+- **AWS Authentication**: ALWAYS use AWS SSO (`aws sso login`), credentials via temporary session tokens only
+
+### Default AWS Profile - CRITICAL
+
+**ALWAYS use profile `jitsi-hosting` for this project**
+
+- All AWS CLI commands: `--profile jitsi-hosting`
+- All Terraform commands: `-var="aws_profile=jitsi-hosting"`
+- All Perl scripts: Automatically use via `JitsiConfig` module
+- Profile config: `jitsi-video-hosting-ops/config.json`
+
+**Verification**: `aws sts get-caller-identity --profile jitsi-hosting`
+
+### Planning Philosophy: Costs & Metrics, Not Timelines
+
+This project tracks:
+
+- ✅ **Costs**: Monthly/hourly rates, savings, break-even points
+- ✅ **Metrics**: Performance data, resource counts, technical measurements
+- ✅ **TODOs**: Checkboxes `[ ]` for completion tracking
+- ❌ **NO Timelines**: No quarters, sprints, deadlines, or estimates
+
+**Examples**:
+
+- ✅ "Cost: $0.24/month idle, $0.22/hour running, 96% savings"
+- ✅ "TODO: [ ] Deploy SSM migration"
+- ❌ "Q1 2026", "Estimated 2 weeks", "Due Friday"
+
+### AWS SSO Authentication Policy
+
+**CRITICAL**: This project uses AWS SSO exclusively for authentication.
+
+**Recommended Practices**:
+
+- ✅ Use `aws sso login --profile <profile-name>` for all authentication
+- ✅ Use `--profile` flag with every AWS CLI command
+- ✅ Export temporary credentials via `eval $(aws configure export-credentials --profile <profile> --format env)`
+- ✅ Use short-lived session tokens (expired sessions require re-authentication)
+- ✅ Store SSO configuration in `~/.aws/config` (never credentials in `~/.aws/credentials`)
+- ✅ Use environment variables for tools requiring credential access (Terraform, Kiro CLI, scripts)
+
+**SSO Setup**:
+
+- Infrastructure account: `jitsi-hosting` profile (account: 215665149509)
+- DNS/Domain account: `aerospaceug-admin` profile (account: 211125425201)
+- SSO Portal: `https://d-9267ec26ec.awsapps.com/start`
+
+**Standard SSO Workflow**:
+
+```bash
+# Clear stale sessions
+aws sso logout --profile jitsi-hosting
+
+# Authenticate (opens browser)
+aws sso login --profile jitsi-hosting
+
+# Verify authentication
+aws sts get-caller-identity --profile jitsi-hosting
+
+# For tools requiring environment variables (Kiro CLI, Terraform, etc.)
+eval $(aws configure export-credentials --profile jitsi-hosting --format env)
+```
+
+**Troubleshooting**: If tools can't access SSO profiles directly, export credentials to environment variables using `aws configure export-credentials`. This provides temporary session tokens while maintaining SSO's security model.
 
 ### Documentation Updates Required
 
@@ -45,13 +109,16 @@ After significant changes, update:
 ### Scale-to-Zero Infrastructure
 
 - **Default state**: ECS service runs at `desired_count = 0` (see `main.tf:883`)
-- **Cost model**: $16.62/month fixed (NLB + S3 + Secrets), $0.198/hour variable when running
+- **Cost model**: $16.62/month fixed (NLB + S3 + Secrets), $0.198/hour when running
 - **Never change** `desired_count` in Terraform - use operational scripts only
 - Operational scripts handle scaling: `scale-up.pl`, `scale-down.pl`, `power-down.pl`
 
 ### Multi-Account AWS Setup
 
-- **Infrastructure account**: `668383289911` (us-west-2, profile: `jitsi-dev`)
+- **Infrastructure account**: `215665149509` (us-west-2, profile: `jitsi-hosting`)
+  - SSO Instance: `ssoins-7907a9f3d93386c6`
+  - SSO Portal: `https://d-9267ec26ec.awsapps.com/start`
+  - Permission Set: `AdministratorAccess`
 - **DNS/Domain account**: `211125425201` (us-east-2, profile: `aerospaceug-admin`)
 - **Critical**: Cross-account SSL certificate validation requires manual DNS records
 - See `OPERATIONS.md` for account-specific details (contains sensitive data - DO NOT COMMIT)

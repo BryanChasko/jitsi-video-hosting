@@ -212,6 +212,45 @@ sub display_final_status {
     return;
 }
 
+# Function to destroy NLB
+sub destroy_nlb {
+    log_message('INFO', 'Destroying Network Load Balancer...');
+    
+    my $cmd = "cd .. && terraform apply -var='nlb_enabled=false' -auto-approve";
+    my $result = system($cmd);
+    
+    if ($result != 0) {
+        log_message('ERROR', 'Failed to destroy NLB');
+        return 0;
+    }
+    
+    log_message('SUCCESS', 'NLB destroyed successfully');
+    return 1;
+}
+
+# Function to verify NLB cleanup
+sub verify_nlb_cleanup {
+    log_message('INFO', 'Verifying NLB cleanup...');
+    
+    my $cmd = "aws elbv2 describe-load-balancers " .
+              "--names '$PROJECT_NAME-jvb-nlb' " .
+              "--profile '$AWS_PROFILE' " .
+              "--region '$AWS_REGION' " .
+              "--query 'LoadBalancers[0].LoadBalancerName' " .
+              "--output text 2>/dev/null";
+    
+    my $result = qx($cmd);
+    my $exit_code = $? >> 8;
+    
+    if ($exit_code != 0 || !$result || $result =~ /None/) {
+        log_message('SUCCESS', 'NLB cleanup verified - no orphaned resources');
+        return 1;
+    } else {
+        log_message('WARN', 'NLB may still exist - manual cleanup may be required');
+        return 0;
+    }
+}
+
 # Main function
 sub main {
     log_message('INFO', "Starting Jitsi Platform Scale-Down Process");
@@ -254,6 +293,15 @@ sub main {
         log_message('ERROR', "Scale-down verification failed");
         display_final_status();
         exit 1;
+    }
+    
+    # Destroy NLB after ECS is scaled down
+    unless (destroy_nlb()) {
+        log_message('WARN', 'Failed to destroy NLB - manual cleanup may be required');
+    }
+    
+    unless (verify_nlb_cleanup()) {
+        log_message('WARN', 'NLB cleanup verification failed');
     }
     
     # Display final status

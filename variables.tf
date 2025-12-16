@@ -73,3 +73,9 @@ variable "max_participants" {
   type        = number
   default     = 50
 }
+
+variable "nlb_enabled" {
+  description = "Enable Network Load Balancer for JVB (managed by scripts)"
+  type        = bool
+  default     = false
+}

@@ -23,38 +23,40 @@ kiro-cli
 
 ---
 
-## 2. Kiro Powers
+## 2. Kiro Powers & AWS Services
 
-**Concept**: Powers are specialized capability packages that add context, tools (MCP), steering, and hooks to Kiro agents on-demand. They prevent context overload by only loading what's needed.
+**Kiro Powers** are expertise modules (MCP + steering files) that give Kiro agents specialized knowledge. **AWS Services** (like ECS Express) are infrastructure capabilities you'll be migrating to.
 
 ### Powers Used in This Project
 
-#### `aws-labs/ecs-express` (Active)
-- **Purpose**: Simplified ECS Fargate deployment with "Express Mode" defaults.
-- **Capabilities**: Automatic NLB provisioning, scale-to-zero patterns, simplified task definitions.
-- **Activation**: `/powers activate aws-labs/ecs-express`
-
-#### `hashicorp/terraform` (Reference)
-- **Purpose**: Infrastructure as Code management.
-- **Capabilities**:
-  - Access Terraform Registry APIs (providers, modules).
-  - Manage HCP Terraform workspaces and runs.
-  - Search provider docs (`search_providers`, `get_provider_details`).
-- **Configuration**: Requires `TFE_TOKEN` for HCP features.
- 
 #### `hashicorp/terraform` (Active)
 - **Purpose**: Authoring, validating, and operating Terraform with spec-driven assistance.
 - **Capabilities**:
-  - Registry lookups (providers, modules) and doc retrieval.
-  - Plan scaffolding and HCL generation from specifications.
+  - HCL generation and plan scaffolding from specifications.
+  - Registry lookups (providers, modules) and documentation retrieval.
+  - Validation hooks (`terraform fmt`, `terraform validate`).
   - Workspace/run management for HCP Terraform (optional).
-  - Formatting and validation hooks (`terraform fmt`, `terraform validate`).
 - **Activation**: `/powers activate hashicorp/terraform`
-- **Configuration**: Optional `TFE_TOKEN` for HCP features; local CLI works without it.
+- **Configuration**: Optional `TFE_TOKEN` for HCP Terraform features; local CLI works without it.
+- **Use Case**: Generate refactored Terraform that adopts ECS Express features while preserving scale-to-zero and health checks.
 
 ---
 
-## 3. MCP Servers (Model Context Protocol)
+## 3. AWS ECS Express Mode (Target Architecture)
+
+**What is ECS Express?** A simplified AWS ECS service launched in November 2025 that auto-manages NLB, listeners, target groups, and networking. Instead of defining these resources manually in Terraform, you declare them via service configuration.
+
+**Why migrate?** 
+- ~55% fewer Terraform lines (removes manual NLB/listener/target-group blocks)
+- Same cost model (fixed + variable)
+- Scale-to-zero preserved (`desired_count = 0`)
+- Simpler to understand and maintain
+
+**Kiro's role:** The `hashicorp/terraform` Power will help us refactor `main.tf` to use ECS Express patterns while preserving our domain-agnostic config and operational scripts.
+
+---
+
+## 4. MCP Servers (Model Context Protocol)
 
 **Concept**: MCP servers connect Kiro to external systems (AWS, GitHub, Databases) to perform actions.
 
@@ -69,7 +71,7 @@ kiro-cli
 
 ---
 
-## 4. Spec-Driven Development Workflow
+## 5. Spec-Driven Development Workflow
 
 We utilize Kiro's structured workflow to ensure quality and traceability during the migration.
 
@@ -116,7 +118,7 @@ We utilize Kiro's structured workflow to ensure quality and traceability during 
 
 ---
 
-## 5. Project Steering
+## 6. Project Steering
 
 Steering files provide persistent context to Kiro agents. We have established the following in `.kiro/steering/`:
 
@@ -128,7 +130,7 @@ Steering files provide persistent context to Kiro agents. We have established th
 
 ---
 
-## 6. Hooks
+## 7. Hooks
 
 **Concept**: Automated actions triggered by events (e.g., `preToolUse`, `postToolUse`).
 
@@ -139,7 +141,7 @@ Steering files provide persistent context to Kiro agents. We have established th
 
 ---
 
-## 7. S3 Vectors & Knowledge
+## 8. S3 Vectors & Knowledge
 
 We structure our documentation (`SESSION_CHANGELOG.md`) to be compatible with **Amazon S3 Vectors**.
 - **Goal**: Store project history as vector embeddings.

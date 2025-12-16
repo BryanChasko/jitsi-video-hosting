@@ -80,6 +80,134 @@ sub check_service_exists {
     return $service_name eq $SERVICE_NAME;
 }
 
+# Function to create NLB
+sub create_nlb {
+    log_message('INFO', 'Creating Network Load Balancer for JVB...');
+    
+    my $cmd = "cd .. && terraform apply -var='nlb_enabled=true' -target=module.jvb_nlb -auto-approve";
+    my $result = system($cmd);
+    
+    if ($result != 0) {
+        log_message('ERROR', 'Failed to create NLB');
+        return 0;
+    }
+    
+    log_message('SUCCESS', 'NLB created successfully');
+    return 1;
+}
+
+# Function to wait for NLB to be active
+sub wait_for_nlb_active {
+    log_message('INFO', 'Waiting for NLB to become active...');
+    
+    my $max_attempts = 30;
+    my $attempt = 0;
+    
+    while ($attempt < $max_attempts) {
+        my $cmd = "aws elbv2 describe-load-balancers " .
+                  "--names '$PROJECT_NAME-jvb-nlb' " .
+                  "--profile '$AWS_PROFILE' " .
+                  "--region '$AWS_REGION' " .
+                  "--query 'LoadBalancers[0].State.Code' " .
+                  "--output text 2>/dev/null";
+        
+        my $state = qx($cmd);
+        chomp($state) if $state;
+        
+        if ($state eq 'active') {
+            log_message('SUCCESS', 'NLB is now active');
+            return 1;
+        }
+        
+        $attempt++;
+        log_message('INFO', "NLB state: $state (attempt $attempt/$max_attempts)");
+        sleep(10);
+    }
+    
+    log_message('ERROR', 'NLB failed to become active within timeout');
+    return 0;
+}
+
+# Function to register ECS tasks with NLB target groups
+sub register_nlb_targets {
+    log_message('INFO', 'Registering ECS task IPs with NLB target groups...');
+    
+    # Get task IPs
+    my $cmd = "aws ecs list-tasks " .
+              "--cluster '$CLUSTER_NAME' " .
+              "--service-name '$SERVICE_NAME' " .
+              "--profile '$AWS_PROFILE' " .
+              "--region '$AWS_REGION' " .
+              "--query 'taskArns' " .
+              "--output text 2>/dev/null";
+    
+    my $task_arns = qx($cmd);
+    chomp($task_arns) if $task_arns;
+    
+    if (!$task_arns || $task_arns eq 'None') {
+        log_message('WARN', 'No running tasks found for target registration');
+        return 1;
+    }
+    
+    # Get task details for IP addresses
+    $cmd = "aws ecs describe-tasks " .
+           "--cluster '$CLUSTER_NAME' " .
+           "--tasks $task_arns " .
+           "--profile '$AWS_PROFILE' " .
+           "--region '$AWS_REGION' " .
+           "--query 'tasks[].attachments[].details[?name==\`privateIPv4Address\`].value' " .
+           "--output text 2>/dev/null";
+    
+    my $task_ips = qx($cmd);
+    chomp($task_ips) if $task_ips;
+    
+    if (!$task_ips) {
+        log_message('WARN', 'Could not retrieve task IP addresses');
+        return 1;
+    }
+    
+    # Get target group ARNs
+    my $udp_tg_cmd = "cd .. && terraform output -raw jvb_nlb_target_group_udp_arn 2>/dev/null";
+    my $tcp_tg_cmd = "cd .. && terraform output -raw jvb_nlb_target_group_tcp_arn 2>/dev/null";
+    
+    my $udp_tg_arn = qx($udp_tg_cmd);
+    my $tcp_tg_arn = qx($tcp_tg_cmd);
+    chomp($udp_tg_arn) if $udp_tg_arn;
+    chomp($tcp_tg_arn) if $tcp_tg_arn;
+    
+    if (!$udp_tg_arn || !$tcp_tg_arn) {
+        log_message('WARN', 'Could not retrieve target group ARNs');
+        return 1;
+    }
+    
+    # Register targets
+    for my $ip (split(/\s+/, $task_ips)) {
+        next unless $ip;
+        
+        # Register UDP target
+        my $udp_cmd = "aws elbv2 register-targets " .
+                      "--target-group-arn '$udp_tg_arn' " .
+                      "--targets Id=$ip,Port=10000 " .
+                      "--profile '$AWS_PROFILE' " .
+                      "--region '$AWS_REGION' 2>/dev/null";
+        
+        # Register TCP target  
+        my $tcp_cmd = "aws elbv2 register-targets " .
+                      "--target-group-arn '$tcp_tg_arn' " .
+                      "--targets Id=$ip,Port=4443 " .
+                      "--profile '$AWS_PROFILE' " .
+                      "--region '$AWS_REGION' 2>/dev/null";
+        
+        system($udp_cmd);
+        system($tcp_cmd);
+        
+        log_message('INFO', "Registered task IP $ip with NLB target groups");
+    }
+    
+    log_message('SUCCESS', 'Target registration completed');
+    return 1;
+}
+
 # Function to scale up the service
 sub scale_up_service {
     log_message('INFO', "Scaling up ECS service '$SERVICE_NAME' to $DESIRED_COUNT instance(s)...");
@@ -225,6 +353,17 @@ sub display_final_status {
 sub main {
     log_message('INFO', "Starting Jitsi Platform Scale-Up Process");
     
+    # Step 1: Create NLB first
+    unless (create_nlb()) {
+        log_message('ERROR', 'Failed to create NLB');
+        exit 1;
+    }
+    
+    unless (wait_for_nlb_active()) {
+        log_message('ERROR', 'NLB failed to become active');
+        exit 1;
+    }
+    
     # Check if service exists
     unless (check_service_exists()) {
         log_message('ERROR', "ECS service '$SERVICE_NAME' not found in cluster '$CLUSTER_NAME'");
@@ -261,6 +400,11 @@ sub main {
         log_message('ERROR', "Service failed to reach stable state");
         display_final_status();
         exit 1;
+    }
+    
+    # Register tasks with NLB target groups
+    unless (register_nlb_targets()) {
+        log_message('WARN', 'Failed to register some targets with NLB');
     }
     
     # Verify task health

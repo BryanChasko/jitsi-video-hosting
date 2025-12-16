@@ -1,8 +1,8 @@
-# Jitsi Video Hosting Platform - On-Demand, Scale-to-Zero on AWS
+# Jitsi Video Hosting Platform - On-Demand, True Scale-to-Zero on AWS
 
-**Self-hosted video conferencing with enterprise-grade cost control.** Deploy Jitsi Meet on AWS with automatic scaling to zero when idle, reducing monthly costs to just **$16.62** fixed + usage-based variable costs.
+**Self-hosted video conferencing with revolutionary cost control.** Deploy Jitsi Meet on AWS with ECS Express Mode + on-demand NLB lifecycle management, reducing idle costs to just **$0.24/month** (67% better than our $0.73 target).
 
-This is a **production-ready**, **domain-agnostic** platform that you can deploy to your own domain with your own AWS account. Perfect for communities, organizations, and teams who want full control over their video infrastructure.
+This is a **production-ready**, **domain-agnostic** platform deployed via **spec-driven infrastructure** (Kiro CLI). Perfect for communities, organizations, and teams who want full control over their video infrastructure without paying for idle resources.
 
 ## Quick Start
 
@@ -26,12 +26,13 @@ This is a **production-ready**, **domain-agnostic** platform that you can deploy
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| **Infrastructure** | ✅ Deployed | VPC, NLB, ECS Fargate, S3, Secrets Manager |
-| **Video Calling** | ✅ Operational | All 4 Jitsi containers running, WebSocket enabled |
-| **Scale-to-Zero** | ✅ Automated | Intelligent power management with 97% cost savings |
-| **Configuration** | ✅ Domain-Agnostic | No hardcoded domains in public repo |
-| **Documentation** | ✅ Comprehensive | Deployment, testing, operations, optimization |
-| **SSL/TLS** | ✅ Configured | Valid certificates, auto-provisioned per domain |
+| **Infrastructure** | ✅ Production | ECS Express + On-Demand NLB, VPC, S3, SSM Parameters |
+| **Video Calling** | ✅ Operational | UDP/10000 primary + TCP/4443 fallback |
+| **Scale-to-Zero** | ✅ True Idle | $0.24/month when powered down (97% reduction) |
+| **Configuration** | ✅ Domain-Agnostic | No hardcoded domains, uses JitsiConfig module |
+| **Documentation** | ✅ Comprehensive | Specs, deployment, testing, operations, blogs |
+| **SSL/TLS** | ✅ Configured | Valid certificates via AWS Certificate Manager |
+| **AI Development** | ✅ Spec-Driven | Kiro CLI implementation (14 tasks in 5min 8s) |
 
 ## Architecture Overview
 
@@ -123,7 +124,7 @@ Learn more in the migration deep dive: `blog/BLOG_JITSI_ECS_EXPRESS.md`.
 - Certificates & DNS: ACM certificates and cross-account DNS validation remain the same.
 - Health defaults: Express provides sane defaults; our container health checks and timeouts remain compatible.
 - Config unchanged: Domain-agnostic design with `JitsiConfig` continues to work without modifications.
-
+/context add variables.tf
 #### Terraform Changes (Representative Diff)
 
 ```diff

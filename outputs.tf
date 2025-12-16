@@ -33,25 +33,7 @@ output "security_group_id" {
   value       = aws_security_group.jitsi.id
 }
 
-output "load_balancer_arn" {
-  description = "ARN of the Network Load Balancer"
-  value       = aws_lb.jitsi.arn
-}
-
-output "load_balancer_dns_name" {
-  description = "DNS name of the Network Load Balancer"
-  value       = aws_lb.jitsi.dns_name
-}
-
-output "target_group_https_arn" {
-  description = "ARN of the HTTPS target group"
-  value       = aws_lb_target_group.jitsi_https.arn
-}
-
-output "target_group_jvb_arn" {
-  description = "ARN of the JVB UDP target group"
-  value       = aws_lb_target_group.jitsi_jvb.arn
-}
+# ECS Express Mode handles load balancing automatically
 
 output "ecs_cluster_name" {
   description = "Name of the ECS cluster"
@@ -99,10 +81,10 @@ output "cloudwatch_log_group" {
 }
 
 # Production Optimization Outputs
-output "secrets_manager_arn" {
-  description = "ARN of the Secrets Manager secret for Jitsi authentication"
-  value       = aws_secretsmanager_secret.jitsi_secrets.arn
-  sensitive   = true
+output "ssm_parameter_prefix" {
+  description = "SSM Parameter Store prefix for Jitsi authentication secrets"
+  value       = "/${var.project_name}/"
+  sensitive   = false
 }
 
 
@@ -144,8 +126,26 @@ output "deployment_summary" {
     recording_enabled   = var.enable_recording
     auto_scaling        = "Manual scaling via scripts"
     monitoring          = "CloudWatch logs and metrics"
-    secret_management   = "AWS Secrets Manager"
+    secret_management   = "AWS SSM Parameter Store"
     resource_allocation = "${var.task_cpu} CPU / ${var.task_memory}MB RAM"
     s3_bucket           = aws_s3_bucket.jitsi_recordings.bucket
   }
+}
+
+# JVB NLB Outputs (conditional)
+output "jvb_nlb_dns_name" {
+  description = "DNS name of the JVB Network Load Balancer (when enabled)"
+  value       = var.nlb_enabled ? module.jvb_nlb[0].nlb_dns_name : null
+}
+
+output "jvb_nlb_target_group_udp_arn" {
+  description = "ARN of the JVB UDP target group (when NLB enabled)"
+  value       = var.nlb_enabled ? module.jvb_nlb[0].target_group_udp_arn : null
+  sensitive   = false
+}
+
+output "jvb_nlb_target_group_tcp_arn" {
+  description = "ARN of the JVB TCP target group (when NLB enabled)"
+  value       = var.nlb_enabled ? module.jvb_nlb[0].target_group_tcp_arn : null
+  sensitive   = false
 }

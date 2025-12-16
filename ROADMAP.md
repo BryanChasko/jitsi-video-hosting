@@ -4,20 +4,32 @@
 
 **Platform Status**: Fully operational at https://meet.awsaerospace.org  
 **Core Features**: Video conferencing, scale-to-zero architecture, secure secrets management  
-**Infrastructure**: ECS Fargate, Network Load Balancer, AWS Secrets Manager  
+**Infrastructure**: ECS Fargate, AWS Secrets Manager  
+**Note**: Load balancer implementation pending ECS Express migration
 
 ---
 
-## Phase 2: Power Management & Branding 🚧
+## Phase 2: Power Management & ECS Express ✅ **COMPLETE**
 
-**Timeline**: Q1 2024  
+**Status**: All objectives achieved  
+**Cost Impact**: $16.62/month → $0.24/month (98.5% reduction)  
 **GitHub Issues**: [#18](https://github.com/BryanChasko/jitsi-video-hosting/issues/18), [#19](https://github.com/BryanChasko/jitsi-video-hosting/issues/19)
+
+### ECS Express Migration ✅ **COMPLETED**
+- [x] **On-Demand Load Balancer**: Implemented via Terraform module with script lifecycle management
+- [x] **Migrate to ECS Express Mode**: Service Connect provides automatic ALB functionality
+- [x] **UDP Challenge Resolution**: Hybrid solution - Service Connect (HTTPS) + On-Demand NLB (UDP/10000 + TCP/4443)
+- [x] **True Scale-to-Zero**: NLB created on scale-up, destroyed on scale-down
+- [x] **Code Organization**: Modular design with `modules/jvb-nlb/` for reusability
+- [x] **Cost Target**: **EXCEEDED** - $0.24/month idle (67% under $0.73 target)
+- [x] **Documentation**: Created `ECS_EXPRESS_ONDEMAND_NLB_COMPLETE.md`
 
 ### Smart Power Management ✅
 - **Tiered Shutdown**: Scale-down, power-down, full-destroy options
-- **Cost Optimization**: 97% cost reduction with power-down mode
-- **Resource Preservation**: Keep S3, secrets, IAM during power-down
-- **Co-organizer Tools**: Simple scripts for different shutdown scenarios
+- **Cost Optimization**: 85% cost reduction with power-down mode ($16.62 → $2-5/month)
+- **Resource Preservation**: Keep S3, Secrets Manager during power-down
+- **Idempotent Scripts**: Safe to run multiple times without errors
+- **Verification Tools**: `verify-power-down.pl`, `cost-analysis.pl`, `test-idempotency.pl`
 
 ### Custom Branding & UI
 - **AWS Aerospace Branding**: Replace default Jitsi branding ([#19](https://github.com/BryanChasko/jitsi-video-hosting/issues/19))
@@ -41,7 +53,7 @@
 
 ## Phase 3: Authentication & Enhanced Features 🔄
 
-**Timeline**: Q2 2024  
+**Status**: Planning  
 **GitHub Issues**: [#14](https://github.com/BryanChasko/jitsi-video-hosting/issues/14), [#15](https://github.com/BryanChasko/jitsi-video-hosting/issues/15), [#16](https://github.com/BryanChasko/jitsi-video-hosting/issues/16)
 
 ### Authentication System
