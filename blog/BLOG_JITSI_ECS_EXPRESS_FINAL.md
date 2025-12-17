@@ -8,7 +8,84 @@ When we first considered ECS Express Mode, we faced the UDP video challenge: Exp
 
 This implementation was completed in **5 minutes 8 seconds** using Kiro CLI for spec-driven infrastructure development, demonstrating how AI-assisted development can accelerate complex multi-phase infrastructure work.
 
+**Project Repository**: [jitsi-video-hosting](https://github.com/BryanChasko/jitsi-video-hosting) - Domain-agnostic, reusable architecture
+
 ## The Challenge: UDP + Scale-to-Zero
+
+### Original Architecture Pain Points
+
+Our traditional ECS deployment had one major cost inefficiency:
+
+- **Always-on NLB**: $16.20/month even when service scaled to zero
+- **Fixed VPC costs**: CloudWatch, networking always active
+- **Total idle cost**: $16.62/month
+
+While scale-to-zero worked for ECS tasks, the load balancer remained running 24/7.
+
+### The Goal
+
+**Cost Target**: ≤$0.73/month when idle  
+**Architecture**: On-demand infrastructure that exists only when platform is running  
+**Quality**: Maintain UDP video for optimal performance (no compromise on user experience)  
+**Reusability**: Domain-agnostic design that anyone can fork and deploy
+
+## Configuration Architecture - Key to Reusability
+
+Before diving into the ECS implementation, it's important to understand how we made this **domain-agnostic** and **profile-agnostic**:
+
+### Public + Private Repository Pattern
+
+```
+Public Repo (jitsi-video-hosting)
+├── Infrastructure code (Terraform)
+├── Automation scripts (Perl)
+├── Documentation (generic)
+└── lib/JitsiConfig.pm (config loader)
+         ↓ loads from
+Private Repo (your-jitsi-ops)
+├── config.json (YOUR domain, YOUR AWS profile)
+├── OPERATIONS.md (YOUR procedures)
+└── IAM_IDENTITY_CENTER_CONFIG.md (YOUR AWS details)
+```
+
+**Why This Matters**: You can fork the public repo and deploy your own Jitsi platform without exposing your domain, AWS account, or operational procedures. Everything sensitive lives in your private ops repository.
+
+### Configuration Loading Hierarchy
+
+1. **Environment Variables** - `JITSI_*` or `TF_VAR_*` prefixes
+2. **Private config.json** - In sibling directory `../your-jitsi-ops/config.json`
+3. **Compiled Defaults** - Fallback values in code
+
+**Example Setup**:
+
+```bash
+# Clone public repo
+git clone https://github.com/BryanChasko/jitsi-video-hosting.git
+
+# Create your private ops repo
+cd ..
+mkdir jitsi-ops && cd jitsi-ops
+git init
+
+# Create your configuration
+cat > config.json << 'EOF'
+{
+  "domain": "meet.yourcompany.com",
+  "aws_profile": "your-aws-profile",
+  "aws_region": "us-west-2",
+  "project_name": "jitsi-video-platform"
+}
+EOF
+
+# Scripts and Terraform automatically load YOUR config
+cd ../jitsi-video-hosting
+./scripts/status.pl  # Uses meet.yourcompany.com
+terraform plan       # Uses your-aws-profile
+```
+
+**Result**: The entire infrastructure adapts to your domain and AWS environment without modifying a single line of code.
+
+See [CONFIG_GUIDE.md](../CONFIG_GUIDE.md) and [IAM_IDENTITY_CENTER_SETUP.md](../IAM_IDENTITY_CENTER_SETUP.md) for complete setup details.
 
 ### Original Architecture Pain Points
 

@@ -4,23 +4,74 @@
 
 This is a **production-ready**, **domain-agnostic** platform deployed via **spec-driven infrastructure** (Kiro CLI). Perfect for communities, organizations, and teams who want full control over their video infrastructure without paying for idle resources.
 
-## Quick Start
+## Quick Start - 5 Step Setup
 
-🚀 **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete step-by-step deployment for your domain
+### Prerequisites
+- AWS accounts with IAM Identity Center configured
+- Domain name (this repo uses dynamic rotation under `bryanchasko.com`)
+- AWS CLI installed: `brew install awscli terraform`
+- Perl installed (macOS/Linux default)
 
-🔐 **[CONFIG_GUIDE.md](CONFIG_GUIDE.md)** - Domain-agnostic configuration system (your domain, not hardcoded)
+### Profile Status
 
-📚 **[AWS_SETUP.md](AWS_SETUP.md)** - AWS account setup and IAM configuration
+**Current Setup** (December 16, 2025):
+- ✅ **DNS Account** (`aerospaceug-admin`): Working, AdministratorAccess confirmed
+- ❌ **Infrastructure Account** (`jitsi-hosting`): Requires IAM permission assignment
 
-🌐 **[DOMAIN_SETUP.md](DOMAIN_SETUP.md)** - DNS and SSL certificate configuration
+See [AWS_PROFILE_STATUS.md](https://github.com/BryanChasko/jitsi-video-hosting-ops/AWS_PROFILE_STATUS.md) (private repo) for details.
 
-🔧 **[TOOLING.md](TOOLING.md)** - AI-assisted development workflow with Kiro CLI
+### Setup Flow
 
-🧪 **[TESTING.md](TESTING.md)** - Comprehensive testing and validation guide
+1. **📋 Clone Repositories**
+   ```bash
+   git clone https://github.com/BryanChasko/jitsi-video-hosting.git
+   cd jitsi-video-hosting
+   ```
 
-🏭 **[PRODUCTION_OPTIMIZATION.md](PRODUCTION_OPTIMIZATION.md)** - Security, monitoring, and performance
+2. **🔐 Configure AWS Authentication**  
+   → [IAM_IDENTITY_CENTER_SETUP.md](IAM_IDENTITY_CENTER_SETUP.md) - Set up AWS SSO profile
 
-🤖 **[OPERATIONS.md](https://github.com/BryanChasko/jitsi-video-hosting-ops)** - Operational procedures (private repo)
+3. **⚙️ Create Private Configuration**  
+   → [CONFIG_GUIDE.md](CONFIG_GUIDE.md) - Set up domain-specific config (your domain, not hardcoded)
+
+4. **🌐 Configure Domain & SSL**  
+   → [DOMAIN_SETUP.md](DOMAIN_SETUP.md) - DNS records and ACM certificate
+
+5. **🚀 Deploy Infrastructure**  
+   → [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Terraform deployment steps
+
+### Additional Resources
+
+📚 **[AWS_SETUP.md](AWS_SETUP.md)** - AWS account setup and IAM configuration  
+🔧 **[TOOLING.md](TOOLING.md)** - AI-assisted development with Kiro CLI  
+🧪 **[TESTING.md](TESTING.md)** - Testing and validation  
+🏭 **[PRODUCTION_OPTIMIZATION.md](PRODUCTION_OPTIMIZATION.md)** - Security and monitoring  
+🤖 **Private Ops Repo** - Create your own for environment-specific details
+
+## Configuration Architecture
+
+This repository is **domain-agnostic** and **profile-agnostic**. Your sensitive configuration lives in a separate private repository:
+
+```
+Public Repo (jitsi-video-hosting)
+├── Infrastructure code (Terraform)
+├── Automation scripts (Perl)
+├── Documentation (generic)
+└── lib/JitsiConfig.pm (config loader)
+         ↓ loads from
+Private Repo (your-jitsi-ops)
+├── config.json (YOUR domain, YOUR AWS profile)
+├── OPERATIONS.md (YOUR procedures)
+└── IAM_IDENTITY_CENTER_CONFIG.md (YOUR AWS SSO details)
+```
+
+**Key Benefits**:
+- ✅ Fork public repo without exposing your domain
+- ✅ Keep AWS credentials/profiles private
+- ✅ Share code publicly while protecting operations
+- ✅ Multiple environments via different config files
+
+See [CONFIG_GUIDE.md](CONFIG_GUIDE.md) for setup details.
 
 ## Project Status
 

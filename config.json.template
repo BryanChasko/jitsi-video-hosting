@@ -1,0 +1,10 @@
+{
+  "domain": "meet.example.com",
+  "aws_profile": "your-aws-profile",
+  "aws_region": "us-west-2",
+  "project_name": "jitsi-video-platform",
+  "environment": "prod",
+  "cluster_name": "jitsi-video-platform-cluster",
+  "service_name": "jitsi-video-platform-service",
+  "nlb_name": "jitsi-video-platform-nlb"
+}

@@ -59,31 +59,44 @@ terraform plan
 
 ## Setup for Your Own Deployment
 
-### Step 1: Clone Both Repositories
+### Prerequisites
+
+- Public repo cloned: `jitsi-video-hosting/`
+- AWS SSO profile configured (see [IAM_IDENTITY_CENTER_SETUP.md](IAM_IDENTITY_CENTER_SETUP.md))
+- Domain name registered (e.g., `meet.yourdomain.com`)
+
+### Step 1: Create Private Operations Repository
+
+Create your own private repository to store sensitive configuration:
 
 ```bash
-git clone https://github.com/BryanChasko/jitsi-video-hosting.git
-git clone https://github.com/YOUR_USERNAME/jitsi-video-hosting-ops.git
+# On GitHub, create private repo: your-username/jitsi-ops
+# Then clone it alongside the public repo
 
-# Ensure they're siblings
-ls -la ~/Code/Projects/
-  jitsi-video-hosting/
-  jitsi-video-hosting-ops/
+cd ~/Code/Projects/  # or your preferred location
+git clone https://github.com/your-username/jitsi-ops.git
+
+# Verify structure
+ls -la
+  jitsi-video-hosting/    # Public repo (this one)
+  jitsi-ops/              # Your private repo
 ```
 
-### Step 2: Create Private Configuration
+**Important**: The private repo must be a **sibling directory** to the public repo for the JitsiConfig module to find it.
+
+### Step 2: Create Configuration File
 
 ```bash
-cd jitsi-video-hosting-ops/
+cd jitsi-ops/
 
-# Copy template
-cp config.json.template config.json
+# Copy template from public repo
+cp ../jitsi-video-hosting/config.json.template config.json
 
 # Edit with your values
-vim config.json
+vim config.json  # or nano, code, etc.
 ```
 
-Your `config.json`:
+**Your `config.json`**:
 ```json
 {
   "domain": "meet.yourdomain.com",
@@ -97,7 +110,65 @@ Your `config.json`:
 }
 ```
 
-### Step 3: Run Scripts and Terraform
+**Replace**:
+- `meet.yourdomain.com` → Your actual domain
+- `your-aws-profile-name` → Your AWS CLI profile (from Step 1 prerequisites)
+- `us-west-2` → Your preferred AWS region (optional)
+
+### Step 3: Protect Sensitive Information
+
+Create additional private documentation in your ops repo:
+
+```bash
+cd jitsi-ops/
+
+# Copy IAM Identity Center config template
+cat > IAM_IDENTITY_CENTER_CONFIG.md << 'EOF'
+# IAM Identity Center Configuration
+
+**SSO Start URL**: https://d-xxxxxxxxxx.awsapps.com/start
+**AWS Account ID**: 123456789012
+**Permission Set**: AdministratorAccess
+**Profile Name**: your-aws-profile-name
+
+See public repo IAM_IDENTITY_CENTER_SETUP.md for setup instructions.
+EOF
+
+# Create operations guide
+cat > OPERATIONS.md << 'EOF'
+# Operations Guide - Your Organization
+
+## Deployment Procedures
+[Your specific procedures]
+
+## Monitoring
+[Your monitoring setup]
+
+## Incident Response
+[Your procedures]
+EOF
+
+# Commit to your private repo
+git add .
+git commit -m "Initial configuration for Jitsi platform"
+git push origin main
+```
+
+### Step 4: Verify Configuration Loading
+
+```bash
+cd ~/Code/Projects/jitsi-video-hosting
+
+# Test Perl scripts load config correctly
+perl -I lib -e "use JitsiConfig; my \$config = JitsiConfig->new(); print \$config->domain() . \"\n\";"
+# Should output: meet.yourdomain.com
+
+# Test AWS profile
+perl -I lib -e "use JitsiConfig; my \$config = JitsiConfig->new(); print \$config->aws_profile() . \"\n\";"
+# Should output: your-aws-profile-name
+```
+
+### Step 5: Run Scripts and Terraform
 
 From the public repo directory:
 

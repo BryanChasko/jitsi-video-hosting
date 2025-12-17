@@ -1,6 +1,6 @@
 # Jitsi Video Platform - Complete Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Jitsi Meet video conferencing platform on AWS.
+This guide provides step-by-step instructions for deploying the Jitsi Meet video conferencing platform on AWS using domain-agnostic configuration.
 
 ## Prerequisites
 
@@ -8,45 +8,153 @@ This guide provides step-by-step instructions for deploying the Jitsi Meet video
 
 ```bash
 # Install required tools (macOS)
-brew install terraform awscli perl cpanminus
+brew install terraform awscli perl cpanminus jq
 
 # Install Perl dependencies
-cpanm JSON Term::ANSIColor Perl::Critic
+cpanm JSON Term::ANSIColor
 ```
 
-### AWS Setup
+### AWS Requirements
 
 1. **AWS Account**: Active AWS account with billing enabled
-2. **Domain**: Registered domain name (e.g., `meet.yourdomain.com`)
-3. **SSL Certificate**: Valid SSL certificate in AWS Certificate Manager
-4. **IAM Permissions**: Administrator access or specific permissions for:
-   - ECS, VPC, Load Balancer, Route53, Secrets Manager, S3, CloudWatch
+2. **Domain Name**: Registered domain (e.g., `meet.yourdomain.com`)
+3. **SSL Certificate**: Valid certificate in AWS Certificate Manager for your domain
+4. **IAM Identity Center**: Configured AWS SSO profile (see [IAM_IDENTITY_CENTER_SETUP.md](IAM_IDENTITY_CENTER_SETUP.md))
 
-## Step 1: Clone and Configure
+## Step 1: Repository Setup
+
+### Clone Public Repository
 
 ```bash
-# Clone repository
-git clone <repository-url>
+cd ~/Code/Projects/  # or your preferred location
+git clone https://github.com/BryanChasko/jitsi-video-hosting.git
 cd jitsi-video-hosting
-
-# Configure AWS profile
-aws configure --profile jitsi-dev
-# Enter your AWS Access Key ID, Secret, Region (us-west-2), Output format (json)
 ```
 
-## Step 2: Update Configuration
+### Create Private Operations Repository
 
-### Update Domain and Certificate
+**Important**: Create your own private repository for sensitive configuration.
 
-Edit `variables.tf`:
+```bash
+# On GitHub, create a private repository (e.g., "jitsi-ops")
 
-```hcl
-variable "domain_name" {
-  description = "Domain name for Jitsi Meet"
-  type        = string
-  default     = "meet.yourdomain.com"  # Change this
+cd ~/Code/Projects/
+git clone https://github.com/your-username/jitsi-ops.git
+```
+
+**Verify structure** (repos must be siblings):
+```bash
+ls -la ~/Code/Projects/
+  jitsi-video-hosting/    # Public repo
+  jitsi-ops/              # Your private repo
+```
+
+## Step 2: Configure AWS Authentication
+
+### Set Up IAM Identity Center Profile
+
+Follow [IAM_IDENTITY_CENTER_SETUP.md](IAM_IDENTITY_CENTER_SETUP.md) to:
+1. Configure AWS SSO profile in `~/.aws/config`
+2. Get permission set assigned by admin
+3. Authenticate via `aws sso login`
+
+**Example profile** (`~/.aws/config`):
+```ini
+[profile your-aws-profile]
+sso_session = your-sso-session
+sso_account_id = 123456789012
+sso_role_name = AdministratorAccess
+region = us-west-2
+output = json
+
+[sso-session your-sso-session]
+sso_start_url = https://d-xxxxxxxxxx.awsapps.com/start
+sso_region = us-west-2
+sso_registration_scopes = sso:account:access
+```
+
+### Authenticate
+
+```bash
+aws sso login --profile your-aws-profile
+aws sts get-caller-identity --profile your-aws-profile
+```
+
+**Expected Output**:
+```json
+{
+  "UserId": "AROA...:username",
+  "Account": "123456789012",
+  "Arn": "arn:aws:sts::123456789012:assumed-role/AWSReservedSSO_AdministratorAccess_.../username"
 }
 ```
+
+**If you see "ForbiddenException: No access"**: Your user is not assigned to the AdministratorAccess permission set. See [IAM_IDENTITY_CENTER_SETUP.md](IAM_IDENTITY_CENTER_SETUP.md) for resolution steps.
+
+## Step 3: Create Configuration File
+
+### Copy Template and Customize
+
+```bash
+cd ~/Code/Projects/jitsi-ops/
+
+# Copy template from public repo
+cp ../jitsi-video-hosting/config.json.template config.json
+
+# Edit with YOUR values
+vim config.json
+```
+
+**Your `config.json`**:
+```json
+{
+  "domain": "meet.yourdomain.com",
+  "aws_profile": "your-aws-profile",
+  "aws_region": "us-west-2",
+  "project_name": "jitsi-video-platform",
+  "environment": "prod",
+  "cluster_name": "jitsi-video-platform-cluster",
+  "service_name": "jitsi-video-platform-service",
+  "nlb_name": "jitsi-video-platform-nlb"
+}
+```
+
+**Save sensitive details** in your private repo:
+```bash
+cd ~/Code/Projects/jitsi-ops/
+
+# Create IAM config reference
+cat > IAM_IDENTITY_CENTER_CONFIG.md << 'EOF'
+# IAM Identity Center Configuration
+
+**SSO Start URL**: https://d-xxxxxxxxxx.awsapps.com/start
+**AWS Account ID**: 123456789012
+**Permission Set**: AdministratorAccess
+**Profile Name**: your-aws-profile
+
+See public repo for generic setup guide.
+EOF
+
+# Commit to private repo
+git add .
+git commit -m "Initial Jitsi platform configuration"
+git push origin main
+```
+
+### Verify Configuration Loading
+
+```bash
+cd ~/Code/Projects/jitsi-video-hosting
+
+# Test config loads correctly
+perl -I lib -e "use JitsiConfig; my \$config = JitsiConfig->new(); print \$config->domain() . \"\n\";"
+# Should output: meet.yourdomain.com
+
+perl -I lib -e "use JitsiConfig; my \$config = JitsiConfig->new(); print \$config->aws_profile() . \"\n\";"
+# Should output: your-aws-profile
+```
+
+## Step 4: Configure Domain and SSL Certificate
 
 Edit `main.tf` - Update certificate ARN:
 
