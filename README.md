@@ -8,17 +8,9 @@ This is a **production-ready**, **domain-agnostic** platform deployed via **spec
 
 ### Prerequisites
 - AWS accounts with IAM Identity Center configured
-- Domain name (this repo uses dynamic rotation under `bryanchasko.com`)
+- Domain name (registered and managed in Route 53)
 - AWS CLI installed: `brew install awscli terraform`
 - Perl installed (macOS/Linux default)
-
-### Profile Status
-
-**Current Setup** (December 16, 2025):
-- ✅ **DNS Account** (`aerospaceug-admin`): Working, AdministratorAccess confirmed
-- ❌ **Infrastructure Account** (`jitsi-hosting`): Requires IAM permission assignment
-
-See [AWS_PROFILE_STATUS.md](https://github.com/BryanChasko/jitsi-video-hosting-ops/AWS_PROFILE_STATUS.md) (private repo) for details.
 
 ### Setup Flow
 
@@ -32,21 +24,19 @@ See [AWS_PROFILE_STATUS.md](https://github.com/BryanChasko/jitsi-video-hosting-o
    → [IAM_IDENTITY_CENTER_SETUP.md](IAM_IDENTITY_CENTER_SETUP.md) - Set up AWS SSO profile
 
 3. **⚙️ Create Private Configuration**  
-   → [CONFIG_GUIDE.md](CONFIG_GUIDE.md) - Set up domain-specific config (your domain, not hardcoded)
+   → Create a private `jitsi-video-hosting-ops` repo with your `config.json`
 
 4. **🌐 Configure Domain & SSL**  
-   → [DOMAIN_SETUP.md](DOMAIN_SETUP.md) - DNS records and ACM certificate
+   → [docs/deployment/DOMAIN_SETUP.md](docs/deployment/DOMAIN_SETUP.md) - DNS records and ACM certificate
 
 5. **🚀 Deploy Infrastructure**  
-   → [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Terraform deployment steps
+   → [docs/deployment/DEPLOYMENT_GUIDE.md](docs/deployment/DEPLOYMENT_GUIDE.md) - Terraform deployment steps
 
 ### Additional Resources
 
-📚 **[AWS_SETUP.md](AWS_SETUP.md)** - AWS account setup and IAM configuration  
-🔧 **[TOOLING.md](TOOLING.md)** - AI-assisted development with Kiro CLI  
-🧪 **[TESTING.md](TESTING.md)** - Testing and validation  
-🏭 **[PRODUCTION_OPTIMIZATION.md](PRODUCTION_OPTIMIZATION.md)** - Security and monitoring  
-🤖 **Private Ops Repo** - Create your own for environment-specific details
+📚 **[docs/deployment/IAM_IDENTITY_CENTER_SETUP.md](docs/deployment/IAM_IDENTITY_CENTER_SETUP.md)** - AWS SSO configuration  
+🧪 **[docs/deployment/TESTING.md](docs/deployment/TESTING.md)** - Testing and validation  
+🏭 **[docs/architecture/PRODUCTION_OPTIMIZATION.md](docs/architecture/PRODUCTION_OPTIMIZATION.md)** - Security and monitoring
 
 ## Configuration Architecture
 
@@ -275,14 +265,25 @@ This repository is **domain-agnostic** - no hardcoded domains or AWS profiles. C
 ```
 jitsi-video-hosting/              # PUBLIC REPO
 ├── README.md                      # Project overview (you are here)
-├── CONFIG_GUIDE.md               # Configuration system documentation
-├── DEPLOYMENT_GUIDE.md           # Step-by-step deployment instructions
-├── TESTING.md                    # Testing and validation guide
-├── TOOLING.md                    # Kiro CLI and development workflow
-├── PRODUCTION_OPTIMIZATION.md    # Security and performance tuning
-├── AWS_SETUP.md                  # AWS Identity Center setup
-├── DOMAIN_SETUP.md               # DNS and SSL configuration
-├── CHANGELOG.md                  # Project history and releases
+├── docs/
+│   ├── architecture/             # Design & implementation details
+│   │   ├── ECS_EXPRESS_FEATURES.md
+│   │   ├── ECS_EXPRESS_MIGRATION_BRIEF.md
+│   │   ├── ECS_EXPRESS_ONDEMAND_NLB_COMPLETE.md
+│   │   ├── KIRO_MIGRATION_PLAN.md
+│   │   ├── PRODUCTION_OPTIMIZATION.md
+│   │   ├── PRODUCTION_SUMMARY.md
+│   │   └── SSM_MIGRATION_COMPLETE.md
+│   ├── deployment/               # Setup & deployment guides
+│   │   ├── DEPLOYMENT_GUIDE.md
+│   │   ├── DOMAIN_SETUP.md
+│   │   ├── IAM_IDENTITY_CENTER_SETUP.md
+│   │   └── TESTING.md
+│   └── reference/                # Project history & tracking
+│       ├── CHANGELOG.md
+│       ├── GITHUB_ISSUES_REVIEW.md
+│       ├── REVIEW_SUMMARY.md
+│       └── SESSION_CHANGELOG.md
 ├── main.tf                       # Infrastructure-as-Code (Terraform)
 ├── variables.tf                  # Terraform variables (no defaults)
 ├── outputs.tf                    # Terraform outputs
@@ -306,8 +307,16 @@ jitsi-video-hosting/              # PUBLIC REPO
 jitsi-video-hosting-ops/        # PRIVATE REPO (Your Configuration)
 ├── config.json                  # ⚠️ NOT versioned (your secrets here)
 ├── config.json.template         # Template for setup
+├── prod.tf                      # Production infrastructure
+├── variables.tf                 # Production variables
+├── outputs.tf                   # Production outputs
+├── terraform.tfvars             # Production values
 ├── CONFIG_SETUP.md             # Private repo setup instructions
-└── OPERATIONS.md               # Sensitive operational details
+├── OPERATIONS.md               # Sensitive operational details
+├── DEPLOYMENT_CHECKLIST.md     # Deployment procedures
+├── KIRO_GUIDE.md               # Kiro CLI workflow
+├── TOOLING.md                  # Development tools
+└── PRODUCTION_READINESS.md     # Production deployment guide
 ```
 
 **Key Principle**: Public repo = reusable code. Private repo = your configuration.
@@ -414,7 +423,7 @@ If you encounter "You have been disconnected":
 3. Verify target group health in AWS Console
 4. Restart service: `./scripts/scale-down.pl && ./scripts/scale-up.pl`
 
-See **[TESTING.md](TESTING.md)** for detailed testing documentation.
+See **[docs/deployment/TESTING.md](docs/deployment/TESTING.md)** for detailed testing documentation.
 
 ## Deployment Workflow
 
@@ -437,11 +446,10 @@ graph LR
 ```
 
 Each step has detailed documentation:
-1. **DEPLOYMENT_GUIDE.md** - Complete walkthrough
-2. **CONFIG_GUIDE.md** - Configuration details
-3. **AWS_SETUP.md** - AWS account setup
-4. **DOMAIN_SETUP.md** - DNS and SSL
-5. **TESTING.md** - Validation and debugging
+1. **docs/deployment/DEPLOYMENT_GUIDE.md** - Complete walkthrough
+2. **docs/deployment/IAM_IDENTITY_CENTER_SETUP.md** - AWS account setup
+3. **docs/deployment/DOMAIN_SETUP.md** - DNS and SSL
+4. **docs/deployment/TESTING.md** - Validation and debugging
 
 ## Deployment Success ✅
 
@@ -553,17 +561,17 @@ Use these guidelines to ensure the generated code is accurate and aligns with al
 
 ### Featured Blog Articles
 
-📖 **[ECS Express Mode Migration Guide](./blog/BLOG_JITSI_ECS_EXPRESS.md)** - How we migrated from standard ECS to ECS Express Mode, reducing Terraform from 1,013 to ~450 lines while maintaining scale-to-zero capabilities. Includes cost comparisons, operational impacts, and lessons learned.
+📖 **[docs/architecture/ECS_EXPRESS_MIGRATION_BRIEF.md](docs/architecture/ECS_EXPRESS_MIGRATION_BRIEF.md)** - How we migrated from standard ECS to ECS Express Mode, reducing Terraform from 1,013 to ~450 lines while maintaining scale-to-zero capabilities. Includes cost comparisons, operational impacts, and lessons learned.
 
-🔧 **[Spec-Driven Infrastructure with Kiro CLI](./blog/BLOG_KIRO_TERRAFORM.md)** - How we set up our VS Code workspace with GitHub Copilot and Kiro CLI to automate infrastructure migrations. Covers spec-driven workflow, workspace configuration, and best practices for AI-assisted IaC development.
+🔧 **[docs/architecture/KIRO_MIGRATION_PLAN.md](docs/architecture/KIRO_MIGRATION_PLAN.md)** - How we set up our VS Code workspace with GitHub Copilot and Kiro CLI to automate infrastructure migrations. Covers spec-driven workflow, workspace configuration, and best practices for AI-assisted IaC development.
 
 ### Project Roadmap & Issues
 
-🗺️ **[GitHub Issues & Roadmap](./GITHUB_ISSUES_REVIEW.md)** - Complete roadmap with phases, priorities, and implementation status
+🗺️ **[docs/reference/GITHUB_ISSUES_REVIEW.md](docs/reference/GITHUB_ISSUES_REVIEW.md)** - Complete roadmap with phases, priorities, and implementation status
 
 🔗 **[GitHub Issues](https://github.com/BryanChasko/jitsi-video-hosting/issues)** - Track specific features, bugs, and improvements on GitHub
 
-📋 **[Change Log](./SESSION_CHANGELOG.md)** - Detailed changelog of all project changes and decisions
+📋 **[docs/reference/CHANGELOG.md](docs/reference/CHANGELOG.md)** - Detailed changelog of all project changes and decisions
 
 ---
 

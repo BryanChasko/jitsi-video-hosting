@@ -5,28 +5,113 @@
 *.tfvars.json
 .terraform/
 .terraform.lock.hcl
+.terraform.old.*
 crash.log
 crash.*.log
+tfplan
+*.tfplan
 
 # AWS
 .aws/
+aws-credentials
 
-# IDE
+# IDE & Editors
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
+.vim/
+.emacs.d/
 
 # OS
 .DS_Store
 Thumbs.db
+.AppleDouble
+.LSOverride
+*.pem
+*.key
+
+# Node/npm (if used)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Python (if used)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ruby (if used)
+Gemfile.lock
+.bundle/
 
 # Logs
 *.log
+logs/
 
-# Blog drafts (published articles hosted on AWS Builder Center)
-blog/BLOG_JITSI_ECS_EXPRESS.md
-blog/BLOG_KIRO_TERRAFORM.md
+# Environment files
+.env
+.env.local
+.env.*.local
 
-# Exclude the internal operations document
-OPERATIONS.md
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
+.#*
+
+# IDE temporary
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Perl
+*.pl.bak
+.perl-version
+
+# Sensitive files (should be in private repo)
+config.json
+secrets.json
+credentials.json
+
+# Build artifacts
+dist/
+build/
+*.o
+*.a
+*.so
+
+# Backup files
+*.backup
+*.bak
+*.old
+*~
+
+# Misc
+.cache/
+.tmp/
+temp/
